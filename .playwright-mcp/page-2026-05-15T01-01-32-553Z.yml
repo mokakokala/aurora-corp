@@ -1,0 +1,31 @@
+- generic [ref=e29]:
+  - banner [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e34]: A.U.R.O.R.A CORP
+      - generic [ref=e35]: TERMINAL ACTIF — CONNEXION SÉCURISÉE
+  - navigation [ref=e36]:
+    - generic [ref=e37]:
+      - button "Compte à Rebours" [ref=e38] [cursor=pointer]:
+        - img [ref=e39]
+        - generic [ref=e42]: Compte à Rebours
+      - button "Carte Radar" [ref=e43] [cursor=pointer]:
+        - img [ref=e44]
+        - generic [ref=e46]: Carte Radar
+      - button "Scanner ADN" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+        - generic [ref=e60]: Scanner ADN
+      - button "Audio Log" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+        - generic [ref=e68]: Audio Log
+  - main [ref=e69]:
+    - generic [ref=e217]:
+      - generic [ref=e218]:
+        - img [ref=e219]
+        - generic [ref=e231]:
+          - paragraph [ref=e232]: Module Gamma
+          - heading "Scanner ADN — Identification" [level=2] [ref=e233]
+      - generic [ref=e245]:
+        - paragraph [ref=e246]: "> Analyse en cours..."
+        - paragraph [ref=e247]: "Séquençage ADN : LYNX"
+  - contentinfo [ref=e104]:
+    - paragraph [ref=e105]: A.U.R.O.R.A CORP — SYSTÈME v2.1.7 — ACCÈS RESTREINT

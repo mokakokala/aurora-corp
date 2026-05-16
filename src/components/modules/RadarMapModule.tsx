@@ -89,6 +89,10 @@ export function RadarMapModule() {
 
     // ── Boucle de rendu ────────────────────────────────────────────────
     const drawFrame = () => {
+      const ov = document.documentElement.classList.contains('override-active')
+      const accent = ov ? '#22c55e' : '#f97316'
+      const rgba = (a: number) => ov ? `rgba(34,197,94,${a})` : `rgba(249,115,22,${a})`
+
       ctx.clearRect(0, 0, canvasSize, canvasSize)
 
       // Fond uniforme — même couleur que l'océan pour éviter le cadre visible
@@ -100,13 +104,13 @@ export function RadarMapModule() {
       for (let i = 1; i <= 4; i++) {
         ctx.beginPath()
         ctx.arc(cx, cy, (maxR / 4) * i, 0, Math.PI * 2)
-        ctx.strokeStyle = `rgba(249,115,22,${0.18 + i * 0.08})`
+        ctx.strokeStyle = rgba(0.18 + i * 0.08)
         ctx.lineWidth = 1.2
         ctx.stroke()
       }
 
       // Lignes croisées
-      ctx.strokeStyle = 'rgba(249,115,22,0.25)'
+      ctx.strokeStyle = rgba(0.25)
       ctx.lineWidth = 1
       ;[
         [cx - maxR - 10, cy, cx + maxR + 10, cy],
@@ -127,7 +131,7 @@ export function RadarMapModule() {
       grad.addColorStop(1, 'rgba(28, 22, 8, 1)')
       ctx.fillStyle = grad
       ctx.fill()
-      ctx.strokeStyle = '#f97316'
+      ctx.strokeStyle = accent
       ctx.lineWidth = 2.5
       ctx.stroke()
 
@@ -143,9 +147,9 @@ export function RadarMapModule() {
       ctx.arc(cx, cy, maxR + 10, sweep - Math.PI * 0.35, sweep)
       ctx.closePath()
       const sweepGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR)
-      sweepGrad.addColorStop(0, 'rgba(249,115,22,0)')
-      sweepGrad.addColorStop(0.7, 'rgba(249,115,22,0.20)')
-      sweepGrad.addColorStop(1, 'rgba(249,115,22,0)')
+      sweepGrad.addColorStop(0, rgba(0))
+      sweepGrad.addColorStop(0.7, rgba(0.20))
+      sweepGrad.addColorStop(1, rgba(0))
       ctx.fillStyle = sweepGrad
       ctx.fill()
       ctx.restore()
@@ -154,7 +158,7 @@ export function RadarMapModule() {
       ctx.beginPath()
       ctx.moveTo(cx, cy)
       ctx.lineTo(cx + Math.cos(sweep) * (maxR + 10), cy + Math.sin(sweep) * (maxR + 10))
-      ctx.strokeStyle = '#f97316'
+      ctx.strokeStyle = accent
       ctx.lineWidth = 2
       ctx.stroke()
 

@@ -1,4 +1,5 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { useIsOverride } from '../../hooks/useIsOverride'
 import { motion } from 'framer-motion'
 import { Play, Pause, Radio, Volume2 } from 'lucide-react'
 import { useWavesurfer } from '@wavesurfer/react'
@@ -10,15 +11,21 @@ function formatTime(s: number): string {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
 }
 
+const VU_METER_CONFIG = Array.from({ length: 20 }, () => ({
+  opacity: Math.random() * 0.7 + 0.3,
+  duration: 0.15 + Math.random() * 0.25,
+}))
+
 export function AudioLogModule() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isReady, setIsReady] = useState(false)
+  const isOverride = useIsOverride()
 
   const { wavesurfer, isPlaying, currentTime } = useWavesurfer({
     container: containerRef,
-    url: '/aurora-corp/distress_signal.mp3',
-    waveColor: 'rgba(249,115,22,0.85)',
-    progressColor: '#f97316',
+    url: `${import.meta.env.BASE_URL}distress_signal.mp3`,
+    waveColor: isOverride ? 'rgba(34,197,94,0.85)' : 'rgba(249,115,22,0.85)',
+    progressColor: isOverride ? '#22c55e' : '#f97316',
     cursorColor: 'rgba(255,255,255,0.8)',
     height: 80,
     barWidth: 2,
@@ -27,11 +34,18 @@ export function AudioLogModule() {
     normalize: true,
   })
 
-  const onReady = useCallback(() => setIsReady(true), [])
+  useEffect(() => {
+    if (!wavesurfer) return
+    return wavesurfer.on('ready', () => setIsReady(true))
+  }, [wavesurfer])
 
-  if (wavesurfer) {
-    wavesurfer.on('ready', onReady)
-  }
+  useEffect(() => {
+    if (!wavesurfer) return
+    wavesurfer.setOptions({
+      waveColor: isOverride ? 'rgba(34,197,94,0.85)' : 'rgba(249,115,22,0.85)',
+      progressColor: isOverride ? '#22c55e' : '#f97316',
+    })
+  }, [wavesurfer, isOverride])
 
   const togglePlay = () => wavesurfer?.playPause()
 
@@ -106,8 +120,8 @@ export function AudioLogModule() {
                 <motion.div
                   key={i}
                   className={`h-1.5 flex-1 rounded-sm ${i < 14 ? 'bg-orange-500' : i < 17 ? 'bg-orange-400' : 'bg-red-500'}`}
-                  animate={isPlaying ? { opacity: [0.3, Math.random() * 0.7 + 0.3, 0.3] } : { opacity: 0.15 }}
-                  transition={{ repeat: Infinity, duration: 0.15 + Math.random() * 0.25, delay: i * 0.02 }}
+                  animate={isPlaying ? { opacity: [0.3, VU_METER_CONFIG[i].opacity, 0.3] } : { opacity: 0.15 }}
+                  transition={{ repeat: Infinity, duration: VU_METER_CONFIG[i].duration, delay: i * 0.02 }}
                 />
               ))}
             </div>

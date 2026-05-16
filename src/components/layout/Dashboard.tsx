@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePresence } from '../../hooks/usePresence'
+import { useTabTitle } from '../../hooks/useTabTitle'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Timer, Map, Dna, Radio } from 'lucide-react'
+import { TARGET_DATE } from '../../config/constants'
+import { useCountdown } from '../../hooks/useCountdown'
 import { CountdownModule } from '../modules/CountdownModule'
 import { RadarMapModule } from '../modules/RadarMapModule'
 import { DNAScannerModule } from '../modules/DNAScannerModule'
@@ -16,16 +19,54 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id']
 
+const HEADER_STAGES = [
+  'A.U.R.O.R.A CORP',
+  'A.U.R.O.R.4 C0RP',
+  '4.U.R.0.R.4 C0RP',
+  '?.U.?.0.?.4 ???P',
+  '??.??.??.?? ????',
+  'SIGNAL PERDU',
+  'KONAMI',
+]
+
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
   center: { x: 0, opacity: 1 },
   exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
 }
 
-export function Dashboard() {
+export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void }) {
   const [activeTab, setActiveTab] = useState<TabId>('countdown')
   const [direction, setDirection] = useState(1)
   const activeCount = usePresence()
+  useTabTitle()
+
+  // Easter egg 7 — corruption du titre au clic sur le point
+  const [dotClicks, setDotClicks] = useState(0)
+  useEffect(() => {
+    if (dotClicks < HEADER_STAGES.length - 1) return
+    const t = setTimeout(() => setDotClicks(0), 3000)
+    return () => clearTimeout(t)
+  }, [dotClicks])
+
+  // Easter egg 13 — overlay jour J
+  const { expired } = useCountdown(TARGET_DATE)
+  const [showDayJ, setShowDayJ] = useState(() =>
+    TARGET_DATE.getTime() <= Date.now() && !sessionStorage.getItem('aurora_dayj')
+  )
+  useEffect(() => {
+    if (!expired || sessionStorage.getItem('aurora_dayj')) return
+    const t = setTimeout(() => setShowDayJ(true), 0)
+    return () => clearTimeout(t)
+  }, [expired])
+  useEffect(() => {
+    if (!showDayJ) return
+    const t = setTimeout(() => {
+      sessionStorage.setItem('aurora_dayj', '1')
+      setShowDayJ(false)
+    }, 7000)
+    return () => clearTimeout(t)
+  }, [showDayJ])
 
   const changeTab = (id: TabId) => {
     const oldIdx = TABS.findIndex((t) => t.id === activeTab)
@@ -37,6 +78,66 @@ export function Dashboard() {
   const ActiveComponent = TABS.find((t) => t.id === activeTab)!.component
 
   return (
+    <>
+    {/* Easter egg 13 — overlay jour J */}
+    <AnimatePresence>
+      {showDayJ && (
+        <motion.div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black font-terminal p-8 cursor-pointer"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          onClick={() => { sessionStorage.setItem('aurora_dayj', '1'); setShowDayJ(false) }}
+        >
+          <div className="pointer-events-none absolute inset-0 scanlines opacity-20" />
+          <div className="text-center space-y-6 max-w-lg">
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-xs tracking-[0.4em] text-orange-600 uppercase"
+            >
+              — TRANSMISSION PRIORITAIRE —
+            </motion.p>
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0, duration: 0.6 }}
+              className="text-2xl sm:text-3xl tracking-[0.25em] text-orange-300 uppercase font-bold"
+              style={{ textShadow: '0 0 30px rgba(249,115,22,0.6)' }}
+            >
+              RESTAURATION COMPLÈTE
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 2.0, duration: 0.5 }}
+              className="text-sm tracking-widest text-orange-400 uppercase"
+            >
+              FICHIERS DÉCLASSIFIÉS — ACCÈS AUTORISÉ
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 3.0, duration: 0.5 }}
+              className="text-xs tracking-[0.2em] text-orange-500 uppercase"
+            >
+              OPÉRATION A.U.R.O.R.A — PHASE 2 INITIÉE
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.6, 0.2, 0.8, 1] }}
+              transition={{ delay: 4.5, duration: 0.8 }}
+              className="text-xs text-orange-700 tracking-widest pt-4"
+            >
+              [ APPUYER POUR CONTINUER ]
+            </motion.p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
     <div className="min-h-screen bg-aurora-bg font-terminal text-orange-100">
       {/* Ambient scanline */}
       <div className="pointer-events-none fixed inset-0 z-10 scanlines opacity-10" />
@@ -50,8 +151,23 @@ export function Dashboard() {
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="h-2 w-2 rounded-full bg-orange-500 blink" />
-            <span className="text-xs tracking-[0.4em] text-orange-400 uppercase font-bold">A.U.R.O.R.A CORP</span>
+            <button
+              className="h-2 w-2 flex-shrink-0 rounded-full bg-orange-500 blink cursor-pointer"
+              onClick={() => setDotClicks(n => Math.min(n + 1, HEADER_STAGES.length - 1))}
+              aria-label="Signal A.U.R.O.R.A"
+            />
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={dotClicks}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.15 }}
+                className={`text-xs tracking-[0.4em] uppercase font-bold ${dotClicks >= HEADER_STAGES.length - 1 ? 'text-red-400' : 'text-orange-400'}`}
+              >
+                {HEADER_STAGES[dotClicks]}
+              </motion.span>
+            </AnimatePresence>
           </div>
           <span className="text-xs text-orange-500 tracking-widest hidden sm:block">
             TERMINAL ACTIF — CONNEXION SÉCURISÉE
@@ -97,7 +213,10 @@ export function Dashboard() {
             transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
             className="border border-orange-500/50 bg-black/60 backdrop-blur-sm p-5 sm:p-7"
           >
-            <ActiveComponent />
+            {activeTab === 'dna'
+              ? <DNAScannerModule onDiscoverMembers={onDiscoverMembers} />
+              : <ActiveComponent />
+            }
           </motion.section>
         </AnimatePresence>
       </main>
@@ -116,5 +235,6 @@ export function Dashboard() {
         </p>
       </footer>
     </div>
+    </>
   )
 }

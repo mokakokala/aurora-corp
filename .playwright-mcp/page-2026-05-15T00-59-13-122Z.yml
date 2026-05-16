@@ -1,0 +1,13 @@
+- generic [ref=e5]:
+  - generic [ref=e6]:
+    - img [ref=e7]
+    - generic [ref=e9]:
+      - paragraph [ref=e10]: Terminal A.U.R.O.R.A
+      - heading "Identification Requise" [level=1] [ref=e11]
+    - generic [ref=e14]: EN LIGNE
+  - generic [ref=e24]:
+    - img [ref=e25]
+    - paragraph [ref=e27]:
+      - text: Biométrie confirmée.
+      - text: Bienvenue sur le réseau A.U.R.O.R.A.
+    - paragraph [ref=e28]: Chargement du terminal...

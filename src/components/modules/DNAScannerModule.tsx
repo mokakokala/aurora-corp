@@ -1,18 +1,20 @@
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Dna, Search, RotateCcw } from 'lucide-react'
+import { Dna, Search, RotateCcw, X } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
-import { TARGET_DATE } from '../../config/constants'
+import { TARGET_DATE, DNA_SCAN_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
 
 type Step = 'idle' | 'scanning' | 'result'
 
 const SCAN_DURATION = 2600
 
-export function DNAScannerModule() {
+export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: () => void }) {
   const [step, setStep] = useState<Step>('idle')
   const [input, setInput] = useState('')
   const [submittedId, setSubmittedId] = useState('')
+  const [showColettePopup, setShowColettePopup] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -26,9 +28,10 @@ export function DNAScannerModule() {
     setStep('scanning')
     timeoutRef.current = setTimeout(() => {
       setStep('result')
+      if (/colette/i.test(scannedId)) setShowColettePopup(true)
       const raw = sessionStorage.getItem('aurora_identity')
       const identity = raw ? JSON.parse(raw) as { prenom_totem: string; ip?: string; city?: string } : null
-      supabase.from('dna_scans').insert([{
+      supabase.from(DNA_SCAN_TABLE).insert([{
         logged_as: identity?.prenom_totem ?? 'inconnu',
         scanned_id: scannedId,
         ip: identity?.ip ?? null,
@@ -41,8 +44,11 @@ export function DNAScannerModule() {
     setStep('idle')
     setInput('')
     setSubmittedId('')
+    setShowColettePopup(false)
   }
 
+  const isAurora = /^a\.?u\.?r\.?o\.?r\.?a\.?(\s+corp\.?)?$/i.test(submittedId.trim())
+  const isColette = /colette/i.test(submittedId)
   const isAndalouse = /andalouse|pauwels/i.test(submittedId)
   const isMagot = /magot/i.test(submittedId)
   const isSouslik = /souslik/i.test(submittedId)
@@ -58,6 +64,56 @@ export function DNAScannerModule() {
     : `${String(days).padStart(2, '0')}j ${String(hours).padStart(2, '0')}h ${String(minutes).padStart(2, '0')}m ${String(seconds).padStart(2, '0')}s`
 
   return (
+    <>
+    {createPortal(
+      <AnimatePresence>
+        {showColettePopup && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-sm p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            onClick={() => setShowColettePopup(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-sm border-2 border-orange-500/70 bg-black font-terminal"
+              initial={{ scale: 0.92, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 16 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-orange-500/40 px-5 py-3">
+                <div>
+                  <p className="text-sm tracking-wider text-orange-300 font-bold uppercase">
+                    La voici, LA MADRINA.
+                  </p>
+                  <p className="text-xs text-orange-600 tracking-widest mt-0.5">
+                    Pov : sepadelia
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowColettePopup(false)}
+                  className="text-orange-600 hover:text-orange-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-1">
+                <img
+                  src={`${import.meta.env.BASE_URL}colette.PNG`}
+                  alt="La Madrina"
+                  className="w-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-orange-500/30 pb-4">
@@ -152,11 +208,35 @@ export function DNAScannerModule() {
             className="space-y-5"
           >
             {/* Result block */}
-            <div className={`border p-5 font-terminal space-y-3 ${isAndalouse ? 'border-yellow-500/60 bg-yellow-900/10' : 'border-red-500/40 bg-red-900/10'}`}>
+            <div className={`border p-5 font-terminal space-y-3 ${isAurora ? 'border-orange-400/80 bg-orange-900/15' : isColette ? 'border-orange-400/60 bg-orange-900/10' : isAndalouse ? 'border-yellow-500/60 bg-yellow-900/10' : 'border-red-500/40 bg-red-900/10'}`}>
               <p className="text-xs text-orange-500 tracking-widest">
                 &gt; SÉQUENCE : {submittedId.toUpperCase()}
               </p>
-              {isAndalouse ? (
+              {isAurora ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    IDENTIFIANT CORPORATIF RECONNU — ACCÈS AUX DOSSIERS CLASSIFIÉS
+                  </p>
+                  <button
+                    onClick={onDiscoverMembers}
+                    className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                  >
+                    Découvrir les membres de la A.U.R.O.R.A. CORP.
+                  </button>
+                </>
+              ) : isColette ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    IDENTIFICATION CONFIRMÉE — TRANSMISSION EN COURS
+                  </p>
+                </>
+              ) : isAndalouse ? (
                 <>
                   <p className="text-xs text-orange-300 leading-relaxed">
                     Analyse en cours... Résultat détecté :
@@ -339,5 +419,6 @@ export function DNAScannerModule() {
         )}
       </AnimatePresence>
     </div>
+    </>
   )
 }

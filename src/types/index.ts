@@ -5,10 +5,3 @@ export interface CountdownResult {
   seconds: number
   expired: boolean
 }
-
-export interface MarkerInfo {
-  index: number
-  label: string
-  x: number
-  y: number
-}

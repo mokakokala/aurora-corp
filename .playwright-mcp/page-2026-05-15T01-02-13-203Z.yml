@@ -1,0 +1,45 @@
+- generic [ref=e29]:
+  - banner [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e34]: A.U.R.O.R.A CORP
+      - generic [ref=e35]: TERMINAL ACTIF — CONNEXION SÉCURISÉE
+  - navigation [ref=e36]:
+    - generic [ref=e37]:
+      - button "Compte à Rebours" [ref=e38] [cursor=pointer]:
+        - img [ref=e39]
+        - generic [ref=e42]: Compte à Rebours
+      - button "Carte Radar" [ref=e43] [cursor=pointer]:
+        - img [ref=e44]
+        - generic [ref=e46]: Carte Radar
+      - button "Scanner ADN" [ref=e47] [cursor=pointer]:
+        - img [ref=e48]
+        - generic [ref=e60]: Scanner ADN
+      - button "Audio Log" [ref=e61] [cursor=pointer]:
+        - img [ref=e62]
+        - generic [ref=e68]: Audio Log
+  - main [ref=e69]:
+    - generic [ref=e268]:
+      - generic [ref=e269]:
+        - img [ref=e270]
+        - generic [ref=e273]:
+          - paragraph [ref=e274]: Module Bêta
+          - heading "Carte Radar — Zone d'impact" [level=2] [ref=e275]
+      - generic [ref=e276]:
+        - generic:
+          - generic: ÉPAVE
+        - button [active] [ref=e278] [cursor=pointer]
+        - button [ref=e281] [cursor=pointer]
+        - button [ref=e284] [cursor=pointer]
+        - button [ref=e287] [cursor=pointer]
+        - button [ref=e290] [cursor=pointer]
+        - button [ref=e293] [cursor=pointer]
+        - button [ref=e296] [cursor=pointer]
+        - generic [ref=e301]:
+          - generic [ref=e302]:
+            - paragraph [ref=e303]: Évadés
+            - paragraph [ref=e304]: "— Erreur : Données Corrompues"
+          - button [ref=e305] [cursor=pointer]:
+            - img [ref=e306]
+      - paragraph [ref=e299]: SIGNAL ACTIF — 7 SOURCES DÉTECTÉES — DONNÉES PARTIELLES
+  - contentinfo [ref=e104]:
+    - paragraph [ref=e105]: A.U.R.O.R.A CORP — SYSTÈME v2.1.7 — ACCÈS RESTREINT

@@ -1,6 +1,6 @@
 // ─── Edit these values to maintain the app ───────────────────────────────────
 
-export const GLITCH_INTERVAL_MS = 45000
+export const GLITCH_INTERVAL_MS = 60000
 export const GLITCH_DURATION_MS = 800
 
 /** Target unlock date — next Monday at 16:00 local time */
@@ -20,17 +20,5 @@ export const GROUP_LABELS = [
 
 export const SUPABASE_TABLE = 'scouts_login'
 export const OVERRIDE_LOG_TABLE = 'override_logs'
-
-/** Marker positions as percentage of canvas size (x%, y%) */
-export const MARKER_POSITIONS: [number, number][] = [
-  [38, 28],
-  [62, 24],
-  [72, 42],
-  [65, 62],
-  [48, 70],
-  [30, 60],
-  [24, 40],
-]
-
-/** Wreck position as percentage of canvas size */
-export const WRECK_POSITION: [number, number] = [50, 45]
+export const DNA_SCAN_TABLE = 'dna_scans'
+export const KONAMI_TABLE = 'konami_logs'

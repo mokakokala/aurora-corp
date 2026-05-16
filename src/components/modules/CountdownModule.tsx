@@ -37,9 +37,11 @@ export function CountdownModule() {
 
   const [overrideCode, setOverrideCode] = useState('')
   const [overrideStatus, setOverrideStatus] = useState<'idle' | 'accepted' | 'rejected' | 'mocked'>('idle')
-  const [manualUnlock, setManualUnlock] = useState(false)
+  const [manualUnlock, setManualUnlock] = useState(() => sessionStorage.getItem('aurora_override') === '1')
 
   const isUnlocked = expired || manualUnlock
+
+  if (manualUnlock) document.documentElement.classList.add('override-active')
 
   const handleBlockedClick = () => {
     if (isUnlocked) return
@@ -67,6 +69,7 @@ export function CountdownModule() {
       }]).then(({ error }) => { if (error) console.error('Override log error:', error) })
 
       setTimeout(() => {
+        sessionStorage.setItem('aurora_override', '1')
         setManualUnlock(true)
         document.documentElement.classList.add('override-active')
       }, 600)
@@ -246,7 +249,7 @@ export function CountdownModule() {
       >
         {isUnlocked ? (
           <motion.a
-            href="/aurora-corp/AURORA_Survival_Guide.pdf"
+            href={`${import.meta.env.BASE_URL}AURORA_Survival_Guide.pdf`}
             download
             className="flex w-full items-center justify-center gap-3 border border-orange-500/70 bg-orange-500/15 px-6 py-4 text-xs tracking-[0.3em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-400"
             animate={{ boxShadow: ['0 0 0px rgba(249,115,22,0)', '0 0 20px rgba(249,115,22,0.3)', '0 0 0px rgba(249,115,22,0)'] }}
