@@ -25,6 +25,10 @@ export function RadarMapModule() {
   const [markerPixels, setMarkerPixels] = useState<[number, number][]>([])
   const [wreckPixel, setWreckPixel] = useState<[number, number]>([0, 0])
   const [wreckTooltip, setWreckTooltip] = useState(false)
+  const [secretVisible, setSecretVisible] = useState(false)
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const pressStartRef = useRef<number | null>(null)
+  const wasLongPressRef = useRef(false)
 
   useEffect(() => {
     const updateSize = () => {
@@ -127,8 +131,11 @@ export function RadarMapModule() {
       ctx.lineWidth = 2.5
       ctx.stroke()
 
-      // Sweep radar
-      sweepAngleRef.current += 0.011
+      // Sweep radar — accélère progressivement pendant le long press (0→5s)
+      const elapsed = pressStartRef.current !== null ? (performance.now() - pressStartRef.current) / 1000 : 0
+      const t = Math.min(elapsed / 4, 1)
+      const speedMult = 1 + t * t * t * 49
+      sweepAngleRef.current += 0.011 * speedMult
       const sweep = sweepAngleRef.current
       ctx.save()
       ctx.beginPath()
@@ -196,7 +203,14 @@ export function RadarMapModule() {
             style={{ left: wreckPixel[0], top: wreckPixel[1] }}
           >
             <button
-              onClick={() => setWreckTooltip(v => !v)}
+              onClick={() => { if (!wasLongPressRef.current) setWreckTooltip(v => !v); wasLongPressRef.current = false }}
+              onPointerDown={() => {
+                wasLongPressRef.current = false
+                pressStartRef.current = performance.now()
+                longPressRef.current = setTimeout(() => { wasLongPressRef.current = true; setSecretVisible(true) }, 5000)
+              }}
+              onPointerUp={() => { clearTimeout(longPressRef.current); pressStartRef.current = null }}
+              onPointerLeave={() => { clearTimeout(longPressRef.current); pressStartRef.current = null }}
               className="h-3 w-3 rounded-full bg-red-500 blink shadow-lg shadow-red-500/80 cursor-pointer"
               aria-label="Signal A.U.R.O.R.A"
             />
@@ -206,7 +220,7 @@ export function RadarMapModule() {
         {/* Tooltip épave */}
         <AnimatePresence>
           {wreckTooltip && wreckPixel[0] > 0 && (() => {
-            const { left, top, showBelow, arrowLeft } = getTooltipStyle(wreckPixel[0], wreckPixel[1])
+            const { left, top } = getTooltipStyle(wreckPixel[0], wreckPixel[1])
             return (
               <motion.div
                 key="wreck-tooltip"
@@ -230,6 +244,29 @@ export function RadarMapModule() {
               </motion.div>
             )
           })()}
+        </AnimatePresence>
+
+        {/* Message secret — long press 5s sur le point rouge */}
+        <AnimatePresence>
+          {secretVisible && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="absolute z-30 border border-red-500/80 bg-black font-terminal shadow-[0_0_24px_rgba(239,68,68,0.3)]"
+              style={{ left: 8, right: 8, top: wreckPixel[1] + 14 }}
+            >
+              <div className="px-4 py-3 flex items-start justify-between gap-3">
+                <p className="text-xs text-red-400 tracking-wide leading-relaxed">
+                  T'as bien fouillé, le dernier chiffre du code est 2.
+                </p>
+                <button onClick={() => setSecretVisible(false)} className="text-red-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Marqueurs sur l'île */}

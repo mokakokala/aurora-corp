@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePresence } from '../../hooks/usePresence'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Timer, Map, Dna, Radio } from 'lucide-react'
 import { CountdownModule } from '../modules/CountdownModule'
@@ -24,6 +25,7 @@ const slideVariants = {
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<TabId>('countdown')
   const [direction, setDirection] = useState(1)
+  const activeCount = usePresence()
 
   const changeTab = (id: TabId) => {
     const oldIdx = TABS.findIndex((t) => t.id === activeTab)
@@ -101,9 +103,16 @@ export function Dashboard() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-orange-500/30 py-4 px-4 text-center">
+      <footer className="border-t border-orange-500/30 py-4 px-4 text-center space-y-1.5">
         <p className="text-xs text-orange-600 tracking-widest">
           A.U.R.O.R.A CORP — SYSTÈME v2.1.7 — ACCÈS RESTREINT
+        </p>
+        <p className="text-xs text-orange-700 tracking-widest">
+          Réseau :{' '}
+          <span className="text-orange-500">
+            {activeCount > 0 ? activeCount : '—'}
+          </span>{' '}
+          {activeCount > 1 ? 'terminaux' : 'terminal'} actuellement actif{activeCount > 1 ? 's' : ''}
         </p>
       </footer>
     </div>

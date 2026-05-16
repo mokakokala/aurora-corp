@@ -6,6 +6,7 @@ import { TARGET_DATE, OVERRIDE_LOG_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
 
 const OVERRIDE_CODE = '7492'
+const WEAK_CODES = new Set(['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999','1234','2929','2933','2026','2626','2525'])
 
 function DigitBox({ value, label }: { value: number; label: string }) {
   const display = String(value).padStart(2, '0')
@@ -35,7 +36,7 @@ export function CountdownModule() {
   const warningTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const [overrideCode, setOverrideCode] = useState('')
-  const [overrideStatus, setOverrideStatus] = useState<'idle' | 'accepted' | 'rejected'>('idle')
+  const [overrideStatus, setOverrideStatus] = useState<'idle' | 'accepted' | 'rejected' | 'mocked'>('idle')
   const [manualUnlock, setManualUnlock] = useState(false)
 
   const isUnlocked = expired || manualUnlock
@@ -56,17 +57,23 @@ export function CountdownModule() {
       setOverrideStatus('accepted')
 
       const raw = sessionStorage.getItem('aurora_identity')
-      const identity = raw ? JSON.parse(raw) as { prenom_totem: string; age: number } : null
+      const identity = raw ? JSON.parse(raw) as { prenom_totem: string; age: number; ip?: string; city?: string } : null
       supabase.from(OVERRIDE_LOG_TABLE).insert([{
         prenom_totem: identity?.prenom_totem ?? 'inconnu',
         age: identity?.age ?? null,
         override_at: new Date().toISOString(),
+        ip: identity?.ip ?? null,
+        city: identity?.city ?? null,
       }]).then(({ error }) => { if (error) console.error('Override log error:', error) })
 
       setTimeout(() => {
         setManualUnlock(true)
         document.documentElement.classList.add('override-active')
       }, 600)
+    } else if (WEAK_CODES.has(overrideCode)) {
+      setOverrideStatus('mocked')
+      setTimeout(() => setOverrideStatus('idle'), 4000)
+      setOverrideCode('')
     } else {
       setOverrideStatus('rejected')
       setTimeout(() => setOverrideStatus('idle'), 2000)
@@ -199,6 +206,18 @@ export function CountdownModule() {
                   className="text-xs tracking-[0.3em] text-red-500 uppercase font-terminal"
                 >
                   ✗ CODE REJETÉ
+                </motion.p>
+              )}
+              {overrideStatus === 'mocked' && (
+                <motion.p
+                  key="mocked"
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-xs text-red-400 font-terminal leading-relaxed"
+                >
+                  Bien essayé chef. Malheureusement on est assez smart pour pas mettre un code de zeub comme tu penses.
                 </motion.p>
               )}
               {overrideStatus === 'accepted' && (

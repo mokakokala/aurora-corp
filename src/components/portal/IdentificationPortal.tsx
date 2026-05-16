@@ -22,16 +22,22 @@ export function IdentificationPortal({ onSuccess }: Props) {
     setError('')
     setStep('loading')
 
+    const geo = await fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => ({}))
+    const ip = geo.ip ?? null
+    const city = geo.city ? `${geo.city}, ${geo.country_name}` : null
+
     const { error } = await supabase.from(SUPABASE_TABLE).insert([
       {
         prenom_totem: name.trim(),
         age: parseInt(age, 10),
         created_at: new Date().toISOString(),
+        ip,
+        city,
       },
     ])
     if (error) console.error('Supabase insert error:', error)
 
-    sessionStorage.setItem('aurora_identity', JSON.stringify({ prenom_totem: name.trim(), age: parseInt(age, 10) }))
+    sessionStorage.setItem('aurora_identity', JSON.stringify({ prenom_totem: name.trim(), age: parseInt(age, 10), ip, city }))
     setStep('confirmed')
     setTimeout(onSuccess, 2200)
   }

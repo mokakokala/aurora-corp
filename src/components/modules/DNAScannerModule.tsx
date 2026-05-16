@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Dna, Search, RotateCcw } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
 import { TARGET_DATE } from '../../config/constants'
+import { supabase } from '../../lib/supabase'
 
 type Step = 'idle' | 'scanning' | 'result'
 
@@ -20,9 +21,20 @@ export function DNAScannerModule() {
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
-    setSubmittedId(input.trim())
+    const scannedId = input.trim()
+    setSubmittedId(scannedId)
     setStep('scanning')
-    timeoutRef.current = setTimeout(() => setStep('result'), SCAN_DURATION)
+    timeoutRef.current = setTimeout(() => {
+      setStep('result')
+      const raw = sessionStorage.getItem('aurora_identity')
+      const identity = raw ? JSON.parse(raw) as { prenom_totem: string; ip?: string; city?: string } : null
+      supabase.from('dna_scans').insert([{
+        logged_as: identity?.prenom_totem ?? 'inconnu',
+        scanned_id: scannedId,
+        ip: identity?.ip ?? null,
+        city: identity?.city ?? null,
+      }]).then(({ error }) => { if (error) console.error('dna_scans insert:', error) })
+    }, SCAN_DURATION)
   }
 
   const reset = () => {
@@ -32,6 +44,14 @@ export function DNAScannerModule() {
   }
 
   const isAndalouse = /andalouse|pauwels/i.test(submittedId)
+  const isMagot = /magot/i.test(submittedId)
+  const isSouslik = /souslik/i.test(submittedId)
+  const isAtele = /atele/i.test(submittedId)
+  const isSaiga = /sa[iï]ga/i.test(submittedId)
+  const isNagor = /nagor/i.test(submittedId)
+  const isAonyx = /a[iï]?onyx/i.test(submittedId)
+  const isBison = /bison/i.test(submittedId)
+  const isGecko = /gecko/i.test(submittedId)
 
   const countdownStr = expired
     ? 'RESTAURATION COMPLÈTE'
@@ -69,7 +89,7 @@ export function DNAScannerModule() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Totem ou prénom..."
+                placeholder="Totem, si pas de totem, nom..."
                 className="w-full border border-orange-500/50 bg-black/60 px-4 py-3 text-sm text-orange-100 placeholder-orange-600 font-terminal outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-500/50 transition-all duration-300"
               />
             </div>
@@ -148,6 +168,139 @@ export function DNAScannerModule() {
                     Seau de 50L de sauce andalouse Pauwels sacrée intact localisé dans la section 4 de la soute. La suprématie du goût est préservée, le moral des troupes est sauvé.
                   </p>
                 </>
+              ) : isAtele ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, un repas de famille doit être partagé à l'instant même, non négociable.
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
+              ) : isSaiga ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, le scan est uniquement destiné à la race non Phoenix, en tant que Phoenix Expert le scan est impossible
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
+              ) : isNagor ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, le Defender n'a pas démarré.
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
+              ) : isAonyx ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, vous voulez sans doute dire Aïonyx, dans tous les cas il lui reste 13 flans a gober, il a pas le temps pour un scan.
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
+              ) : isBison ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, il attend encore le R75.
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
+              ) : isSouslik ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, les vents Alizés de l'hémisphère boréal soufflent bien trop fort.
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
+              ) : isMagot ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    Scan impossible, une sauce bolo en septembre 2023 aurait fait des ravages.
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                </>
               ) : (
                 <>
                   <p className="text-xs text-orange-300 leading-relaxed">
@@ -156,6 +309,11 @@ export function DNAScannerModule() {
                   <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
                     [DONNÉES CORROMPUES DUES À UNE VIOLATION DE L'ARTICLE 4 DE SÉCURITÉ]
                   </p>
+                  {isGecko && (
+                    <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                      Scan impossible, il est sans doute à Porte de Namur pour un Tasty Crousty.
+                    </p>
+                  )}
                   <p className="text-xs text-orange-400 leading-relaxed">
                     Veuillez patienter jusqu'à la restauration système dans :
                   </p>
