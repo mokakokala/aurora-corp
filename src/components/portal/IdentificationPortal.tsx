@@ -22,9 +22,9 @@ export function IdentificationPortal({ onSuccess }: Props) {
     setError('')
     setStep('loading')
 
-    const geo = await fetch('https://ipapi.co/json/').then(r => r.json()).catch(() => ({}))
+    const geo = await fetch('https://ipinfo.io/json').then(r => r.json()).catch(() => ({}))
     const ip = geo.ip ?? null
-    const city = geo.city ? `${geo.city}, ${geo.country_name}` : null
+    const city = geo.city ? `${geo.city}, ${geo.country}` : null
 
     const { error } = await supabase.from(SUPABASE_TABLE).insert([
       {
