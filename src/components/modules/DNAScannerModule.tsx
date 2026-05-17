@@ -10,11 +10,87 @@ type Step = 'idle' | 'scanning' | 'result'
 
 const SCAN_DURATION = 2600
 
+function normalizeName(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+}
+
+const MEMBER_FACTIONS: [string, string][] = [
+  ['Asio', 'Coexistants'], ['Douc', 'Coexistants'], ['Azandica', 'Coexistants'],
+  ['Springbok', 'Coexistants'], ['Warrah', 'Coexistants'], ['Vanneau', 'Coexistants'],
+  ['Simon', 'Coexistants'], ['Dario', 'Coexistants'],
+  ['Irbis', 'Conquérants'], ['Wipsy', 'Conquérants'], ['Mangabey', 'Conquérants'],
+  ['Cariacou', 'Conquérants'], ['Juno', 'Conquérants'], ['Hermine', 'Conquérants'],
+  ['Léon', 'Conquérants'], ['Camille', 'Conquérants'],
+  ['Entelle', 'Croyants'], ['Musang', 'Croyants'], ['Ondatra', 'Croyants'],
+  ['Nayaur', 'Croyants'], ['Folivora', 'Croyants'], ['Kangal', 'Croyants'],
+  ['Raphaël', 'Croyants'], ['Michael', 'Croyants'],
+  ['Oryx', 'Évadés'], ['Sapajou', 'Évadés'], ['Brocard', 'Évadés'],
+  ['Ashera', 'Évadés'], ['Wombat', 'Évadés'], ['Saguinus', 'Évadés'],
+  ['Alexis', 'Évadés'],
+  ['Ourebi', 'Bâtisseurs'], ['Ailurus', 'Bâtisseurs'], ['Gecko', 'Bâtisseurs'],
+  ['Simensis', 'Bâtisseurs'], ['Caracal', 'Bâtisseurs'], ['Harfang', 'Bâtisseurs'],
+  ['Jack', 'Bâtisseurs'], ['Nicolas', 'Bâtisseurs'],
+  ['Mazama', 'Explorateurs'], ['Mustela', 'Explorateurs'], ['Linsang', 'Explorateurs'],
+  ['Dhole', 'Explorateurs'], ['Hydrurga', 'Explorateurs'], ['Caberu', 'Explorateurs'],
+  ['Jules', 'Explorateurs'], ['Achille', 'Explorateurs'],
+  ['Serval', 'Survivants'], ['Tangara', 'Survivants'], ['Siamang', 'Survivants'],
+  ['Galago', 'Survivants'], ['Chaoui', 'Survivants'], ['Zarafa', 'Survivants'],
+  ['Capucin', 'Survivants'], ['Florent', 'Survivants'],
+]
+
+const FACTION_DESCRIPTIONS: Record<string, string> = {
+  'Évadés': "On les aperçoit souvent sur les plages, au large des côtes de l'île, le regard perdu vers l'horizon, ils n'ont jamais vraiment accepté leur arrivée sur cette île. Chacun de leurs gestes, chaque objet qu'ils récupèrent, chaque plan qu'ils esquissent n'ont qu'un seul but : partir. Leurs camps sont fragiles, temporaires, comme s'ils refusaient de s'enraciner. Ils parlent souvent du monde d'avant, comme d'un endroit encore accessible, presque à portée de main. Ils sont guidés par l'espoir d'y retourner un jour. Mais certains parmi les six autres groupes murmurent que plus le temps passe et plus leurs tentatives deviennent désespérées et que même la mer semble les rejeter.\n\nQue fuient-ils vraiment ? L'île ou l'idée d'y rester ?",
+  'Conquérants': "Les conquérants ne regardent pas l'horizon, leur regard se tourne vers le cœur de l'île. Dans leurs yeux, elle n'est pas un piège, mais une opportunité. Leur mode de vie est structuré, presque militaire : surveillance, contrôle des ressources, expansion de leur territoire. Leur présence se ressent avant même de les voir : des traces organisées, des structures solides, des silhouettes qui surveillent. Là où ils passent, l'ordre remplace le chaos. Et derrière cet ordre, leur volonté est claire : contrôler. Ils ne demandent pas leur place. Ils la prennent.\n\nCertains racontent que leur force cache des tensions… que le pouvoir attire autant les ennemis que les traîtres. Sur cette île, jusqu'où peut-on aller pour régner ?",
+  'Coexistants': "Si vous traversez l'île sans faire de bruit, peut-être ne les verrez-vous jamais. Pourtant, ils sont bien là, en parfaite harmonie avec la nature, discrets, presque invisibles. Ils ne cherchent pas à imposer leur présence. Ils observent, écoutent, s'adaptent. Là où d'autres coupent, eux contournent. Là où d'autres prennent, eux demandent ou attendent. Certains prétendent que les racines et champignons qu'ils consomment leur permettent d'entendre l'île elle-même. Certains disent qu'ils connaissent des choses que les autres ignorent, car l'île leur « répond ».\n\nIllusion ? Sagesse ? Difficile à dire, mais une chose est sûre : on croirait qu'ils faisaient déjà partie de cette île avant même le naufrage.",
+  'Bâtisseurs': "Au cœur de l'île, quelque chose prend forme : bien plus qu'un simple campement ou un abri de fortune, quelque chose de plus ambitieux. Les Bâtisseurs ne fuient pas, ils ne subissent pas : ils s'adaptent et transforment. Chaque pierre posée, chaque structure élevée est une déclaration : ils sont prêts à s'installer.\n\nIls recréent des règles, des rôles, une organisation. Une société. Mais certains se demandent… peut-on vraiment reconstruire sans répéter les erreurs du passé ? Et surtout, qui décide de ce que cette « nouvelle civilisation » doit être ?",
+  'Explorateurs': "Ils ont été les premiers à disparaître dans la jungle. Leur soif de découverte les a poussés dans les méandres de l'île dès le premier jour. Guidés par une curiosité presque dangereuse, ils s'enfoncent là où personne n'ose aller : grottes, falaises, ruines oubliées, tanières d'animaux inconnus. Ils cherchent, notent et reviennent changés par de nouvelles expériences. Certains parmi eux auraient même vu des phénomènes étranges au sein de l'île, des endroits qui ne devraient pas exister.\n\nAlors la question se pose : explorent-ils l'île, ou quelque chose les attire-t-il plus profondément en elle ?",
+  'Croyants': "Pour eux, rien n'est un hasard. Ni le naufrage, ni l'île, ni leur présence ici. Ils voient des signes là où d'autres voient le chaos. Une tempête devient un message. Une rencontre, une épreuve. Une découverte, une révélation. Leurs voix et leurs chants soulagent leurs partisans et inquiètent leurs détracteurs. Car croire donne du sens, mais il n'est jamais bon d'en imposer un.\n\nCertains trouvent chez eux du réconfort. D'autres craignent ce qu'ils pourraient devenir si leurs certitudes grandissent. Et si l'île avait réellement une volonté, seraient-ils les seuls à l'entendre ?",
+  'Survivants': "Ils ne sont jamais à un endroit à la fois, ils se déplacent au jour le jour en fonction de la nourriture qu'ils trouvent. Avec eux, pas de grands discours, pas de plans à long terme. Juste des choix, faits au bon moment. Ils avancent, s'adaptent et vivent. Là où d'autres s'épuisent à comprendre ou à contrôler, eux continuent et profitent de ce qu'ils ont.\n\nMais ne vous y trompez pas : ils observent. Ils apprennent et finalement connaissent mieux l'île que beaucoup d'autres groupes.\n\nCertains disent que, si quelqu'un doit survivre jusqu'au bout, ce seront eux. Mais survivre ainsi, est-ce vraiment suffisant ?",
+}
+
+const FACTION_DISPLAY_NAMES: Record<string, string> = {
+  'evades':       'Évadés',
+  'conquerants':  'Conquérants',
+  'coexistants':  'Coexistants',
+  'batisseurs':   'Bâtisseurs',
+  'explorateurs': 'Explorateurs',
+  'croyants':     'Croyants',
+  'survivants':   'Survivants',
+}
+
+const FACTION_MEMBERS_LIST: Record<string, string[]> = {
+  'Évadés':       ['Oryx', 'Sapajou', 'Brocard', 'Ashera', 'Wombat', 'Saguinus', 'Alexis'],
+  'Conquérants':  ['Irbis', 'Wipsy', 'Mangabey', 'Cariacou', 'Juno', 'Hermine', 'Léon', 'Camille'],
+  'Coexistants':  ['Asio', 'Douc', 'Azandica', 'Springbok', 'Warrah', 'Vanneau', 'Simon', 'Dario'],
+  'Bâtisseurs':   ['Ourebi', 'Ailurus', 'Gecko', 'Simensis', 'Caracal', 'Harfang', 'Jack', 'Nicolas'],
+  'Explorateurs': ['Mazama', 'Mustela', 'Linsang', 'Dhole', 'Hydrurga', '(Caberu)', 'Jules', 'Achille'],
+  'Croyants':     ['Entelle', 'Musang', 'Ondatra', 'Nayaur', 'Folivora', 'Kangal', 'Raphaël', 'Michael'],
+  'Survivants':   ['Serval', 'Tangara', 'Siamang', 'Galago', 'Chaoui', 'Zarafa', 'Capucin', 'Florent'],
+}
+
+function findFactionByName(id: string): string | null {
+  if (!id.trim()) return null
+  const normalized = normalizeName(id)
+  return FACTION_DISPLAY_NAMES[normalized] ?? null
+}
+
+function findFaction(id: string): { memberName: string; faction: string } | null {
+  if (!id.trim()) return null
+  const normalized = normalizeName(id)
+  for (const [name, faction] of MEMBER_FACTIONS) {
+    if (normalized.includes(normalizeName(name))) {
+      return { memberName: name, faction }
+    }
+  }
+  return null
+}
+
 export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: () => void }) {
   const [step, setStep] = useState<Step>('idle')
   const [input, setInput] = useState('')
   const [submittedId, setSubmittedId] = useState('')
   const [showColettePopup, setShowColettePopup] = useState(false)
+  const [showFactionPanel, setShowFactionPanel] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -45,6 +121,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setInput('')
     setSubmittedId('')
     setShowColettePopup(false)
+    setShowFactionPanel(false)
   }
 
   const isAurora = /^a\.?u\.?r\.?o\.?r\.?a\.?(\s+corp\.?)?$/i.test(submittedId.trim())
@@ -58,6 +135,9 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const isAonyx = /a[iï]?onyx/i.test(submittedId)
   const isBison = /bison/i.test(submittedId)
   const isGecko = /gecko/i.test(submittedId)
+
+  const factionNameMatch = expired ? findFactionByName(submittedId) : null
+  const factionMatch = expired && !factionNameMatch ? findFaction(submittedId) : null
 
   const countdownStr = expired
     ? 'RESTAURATION COMPLÈTE'
@@ -110,6 +190,57 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
             </motion.div>
           </motion.div>
         )}
+      </AnimatePresence>,
+      document.body
+    )}
+
+    {createPortal(
+      <AnimatePresence>
+        {showFactionPanel && (() => {
+          const panelFaction = factionNameMatch ?? factionMatch?.faction
+          if (!panelFaction) return null
+          return (
+            <motion.div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-sm p-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              onClick={() => setShowFactionPanel(false)}
+            >
+              <motion.div
+                className="relative w-full max-w-lg border-2 border-orange-500/70 bg-black font-terminal"
+                initial={{ scale: 0.92, y: 16 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.92, y: 16 }}
+                transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-start justify-between border-b border-orange-500/40 px-5 py-4">
+                  <div>
+                    <p className="text-xs text-orange-500 tracking-[0.3em] uppercase mb-1">
+                      DOSSIER FACTION — DÉCLASSIFIÉ
+                    </p>
+                    <p className="text-base tracking-wider text-orange-300 font-bold uppercase">
+                      Les {panelFaction}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowFactionPanel(false)}
+                    className="text-orange-600 hover:text-orange-400 transition-colors mt-0.5"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="p-5 max-h-[60vh] overflow-y-auto">
+                  <p className="text-sm text-orange-200 leading-relaxed tracking-wide whitespace-pre-line">
+                    {FACTION_DESCRIPTIONS[panelFaction]}
+                  </p>
+                </div>
+              </motion.div>
+            </motion.div>
+          )
+        })()}
       </AnimatePresence>,
       document.body
     )}
@@ -208,7 +339,17 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
             className="space-y-5"
           >
             {/* Result block */}
-            <div className={`border p-5 font-terminal space-y-3 ${isAurora ? 'border-orange-400/80 bg-orange-900/15' : isColette ? 'border-orange-400/60 bg-orange-900/10' : isAndalouse ? 'border-yellow-500/60 bg-yellow-900/10' : 'border-red-500/40 bg-red-900/10'}`}>
+            <div className={`border p-5 font-terminal space-y-3 ${
+              isAurora
+                ? 'border-orange-400/80 bg-orange-900/15'
+                : isColette
+                ? 'border-orange-400/60 bg-orange-900/10'
+                : isAndalouse
+                ? 'border-yellow-500/60 bg-yellow-900/10'
+                : factionNameMatch || factionMatch
+                ? 'border-orange-400/80 bg-orange-900/15'
+                : 'border-red-500/40 bg-red-900/10'
+            }`}>
               <p className="text-xs text-orange-500 tracking-widest">
                 &gt; SÉQUENCE : {submittedId.toUpperCase()}
               </p>
@@ -247,6 +388,54 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                   <p className="text-xs text-orange-200 leading-relaxed">
                     Seau de 50L de sauce andalouse Pauwels sacrée intact localisé dans la section 4 de la soute. La suprématie du goût est préservée, le moral des troupes est sauvé.
                   </p>
+                </>
+              ) : factionNameMatch ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    FACTION IDENTIFIÉE — {factionNameMatch.toUpperCase()}
+                  </p>
+                  <p className="text-xs text-orange-500 tracking-widest uppercase">
+                    {FACTION_MEMBERS_LIST[factionNameMatch].length} membres répertoriés
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {FACTION_MEMBERS_LIST[factionNameMatch].map(name => (
+                      <span
+                        key={name}
+                        className="border border-orange-500/50 bg-orange-500/10 px-2.5 py-1 text-xs text-orange-300 font-terminal tracking-wider"
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setShowFactionPanel(true)}
+                    className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                  >
+                    En savoir plus sur les {factionNameMatch}
+                  </button>
+                </>
+              ) : factionMatch ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    IDENTIFICATION CONFIRMÉE — ANALYSE ADN COMPLÈTE
+                  </p>
+                  <p className="text-sm text-orange-200 leading-relaxed">
+                    <span className="text-orange-400 font-bold">{factionMatch.memberName}</span>{' '}
+                    fait partie des{' '}
+                    <span className="text-orange-300 font-bold">{factionMatch.faction}</span>.
+                  </p>
+                  <button
+                    onClick={() => setShowFactionPanel(true)}
+                    className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                  >
+                    Découvrir les {factionMatch.faction}
+                  </button>
                 </>
               ) : isAtele ? (
                 <>

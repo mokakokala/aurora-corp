@@ -1,23 +1,29 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft } from 'lucide-react'
+import { useCountdown } from '../../hooks/useCountdown'
+import { TARGET_DATE } from '../../config/constants'
 
 interface Member {
   id: string
   morse: string
+  realName: string
   isChief: boolean
 }
 
 const MEMBERS: Member[] = [
-  { id: 'atele',     morse: '.- - . .-.. . / .-.. ..- .--. .. -.',                              isChief: false },
-  { id: 'naganja',   morse: '-. .- --. / .- -. .--- .-',                                         isChief: false },
-  { id: 'bisanhdi',  morse: '-... .. ... .- -. .... -.. ..',                                     isChief: false },
-  { id: 'magot',     morse: '-- .- --. --- - / -.- .... .- -.',                                  isChief: false },
-  { id: 'michel',    morse: '-- .. -.-. .... . .-.. .- ... .. -. ..- ...',                       isChief: false },
-  { id: 'saintete',  morse: '... .- / ... .- .. -. - . - . / ... .- .. / -..- .. ...-',          isChief: false },
-  { id: 'indiana',   morse: '.. -. -.. .. .- -. .- / ... --- ..- ... -.- .. .-.. .-.. ',         isChief: false },
-  { id: 'president', morse: '.--. .-. . ... .. -.. . -. - / -... .. --. / .-',                  isChief: true  },
+  { id: 'atele',     morse: '.- - . .-.. . / .-.. ..- .--. .. -.',                              realName: 'Atèle Lupin',           isChief: false },
+  { id: 'naganja',   morse: '-. .- --. / .- -. .--- .-',                                         realName: 'Nag-anja',              isChief: false },
+  { id: 'bisanhdi',  morse: '-... .. ... .- -. .... -.. ..',                                     realName: 'Bisanhdi',              isChief: false },
+  { id: 'magot',     morse: '-- .- --. --- - / -.- .... .- -.',                                  realName: 'Magot Khan',            isChief: false },
+  { id: 'michel',    morse: '-- .. -.-. .... . .-.. .- ... .. -. ..- ...',                       realName: 'Michelasinus',          isChief: false },
+  { id: 'saintete',  morse: '... .- / ... .- .. -. - . - . / ... .- .. / -..- .. ...-',          realName: 'Sa Sainteté Saï XIV',   isChief: false },
+  { id: 'indiana',   morse: '.. -. -.. .. .- -. .- / ... --- ..- ... -.- .. .-.. .-.. ',         realName: 'Indiana Souskill',      isChief: false },
+  { id: 'president', morse: '.--. .-. . ... .. -.. . -. - / -... .. --. / .-',                  realName: 'Président Big A',       isChief: true  },
 ]
+
+const SVG_FILTER = 'brightness(0) saturate(100%) invert(49%) sepia(79%) saturate(2398%) hue-rotate(346deg) brightness(103%) contrast(101%)'
+const REAL_FILTER = 'invert(1) sepia(1) saturate(5) hue-rotate(335deg) contrast(1.1)'
 
 const regularMembers = MEMBERS.filter(m => !m.isChief)
 const chief = MEMBERS.find(m => m.isChief)!
@@ -27,15 +33,18 @@ const itemVariants = {
   visible:  { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] } },
 }
 
-function AgentCard({ member, index }: { member: Member; index: number }) {
+function AgentCard({ member, index, expired }: { member: Member; index: number; expired: boolean }) {
   return (
     <motion.div variants={itemVariants} className="border border-orange-500/50 bg-black/70 overflow-hidden group">
       <div className="relative overflow-hidden bg-black" style={{ aspectRatio: '3/4' }}>
         <img
-          src={`${import.meta.env.BASE_URL}members/${member.id}.svg`}
+          src={expired
+            ? `${import.meta.env.BASE_URL}members/${member.id}_real.png`
+            : `${import.meta.env.BASE_URL}members/${member.id}.svg`
+          }
           alt=""
           className="absolute inset-0 w-full h-full object-contain"
-          style={{ filter: 'brightness(0) saturate(100%) invert(49%) sepia(79%) saturate(2398%) hue-rotate(346deg) brightness(103%) contrast(101%)' }}
+          style={{ filter: expired ? REAL_FILTER : SVG_FILTER }}
           onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden' }}
         />
         <div className="absolute top-2 left-2 z-10">
@@ -45,15 +54,21 @@ function AgentCard({ member, index }: { member: Member; index: number }) {
         </div>
       </div>
       <div className="px-3 py-2.5 border-t border-orange-500/30">
-        <p className="font-terminal text-xs text-orange-500 tracking-widest leading-relaxed text-center">
-          {member.morse}
-        </p>
+        {expired ? (
+          <p className="font-terminal text-xs text-orange-400 tracking-widest leading-relaxed text-center font-bold">
+            {member.realName}
+          </p>
+        ) : (
+          <p className="font-terminal text-xs text-orange-500 tracking-widest leading-relaxed text-center">
+            {member.morse}
+          </p>
+        )}
       </div>
     </motion.div>
   )
 }
 
-function ChiefCard({ member }: { member: Member }) {
+function ChiefCard({ member, expired }: { member: Member; expired: boolean }) {
   return (
     <motion.div
       variants={itemVariants}
@@ -63,10 +78,13 @@ function ChiefCard({ member }: { member: Member }) {
       <div className="flex flex-col sm:flex-row">
         <div className="relative sm:w-52 flex-shrink-0 overflow-hidden bg-black" style={{ aspectRatio: '3/4' }}>
           <img
-            src={`${import.meta.env.BASE_URL}members/${member.id}.svg`}
+            src={expired
+              ? `${import.meta.env.BASE_URL}members/${member.id}_real.png`
+              : `${import.meta.env.BASE_URL}members/${member.id}.svg`
+            }
             alt=""
             className="absolute inset-0 w-full h-full object-contain"
-            style={{ filter: 'brightness(0) saturate(100%) invert(49%) sepia(79%) saturate(2398%) hue-rotate(346deg) brightness(103%) contrast(101%)' }}
+            style={{ filter: expired ? REAL_FILTER : SVG_FILTER }}
             onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden' }}
           />
         </div>
@@ -84,9 +102,15 @@ function ChiefCard({ member }: { member: Member }) {
             </p>
           </div>
           <div className="h-px w-16 bg-orange-500/60" />
-          <p className="font-terminal text-xs text-orange-400 tracking-wider leading-loose">
-            {member.morse}
-          </p>
+          {expired ? (
+            <p className="font-terminal text-sm text-orange-400 tracking-wider font-bold">
+              {member.realName}
+            </p>
+          ) : (
+            <p className="font-terminal text-xs text-orange-400 tracking-wider leading-loose">
+              {member.morse}
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-orange-500 blink" />
             <span className="font-terminal text-xs text-orange-500 tracking-widest uppercase">
@@ -106,6 +130,7 @@ const staggerContainer = {
 
 export function MembersPage({ onBack }: { onBack: () => void }) {
   const [introComplete, setIntroComplete] = useState(false)
+  const { expired } = useCountdown(TARGET_DATE)
 
   useEffect(() => {
     const t = setTimeout(() => setIntroComplete(true), 2200)
@@ -207,7 +232,7 @@ export function MembersPage({ onBack }: { onBack: () => void }) {
                   Membres de la Corporation
                 </h1>
                 <p className="text-xs text-orange-600 tracking-widest mt-1 uppercase">
-                  Identités masquées — Données chiffrées
+                  {expired ? 'Identités révélées — Accès total accordé' : 'Identités masquées — Données chiffrées'}
                 </p>
               </motion.div>
 
@@ -216,10 +241,10 @@ export function MembersPage({ onBack }: { onBack: () => void }) {
                 <p className="text-xs tracking-[0.3em] text-orange-600 uppercase mb-3">
                   — Commandement —
                 </p>
-                <ChiefCard member={chief} />
+                <ChiefCard member={chief} expired={expired} />
               </motion.div>
 
-              {/* Regular agents */}
+              {/* Regular members */}
               <div>
                 <p className="text-xs tracking-[0.3em] text-orange-600 uppercase mb-3">
                   — Corps de membres —
@@ -231,7 +256,7 @@ export function MembersPage({ onBack }: { onBack: () => void }) {
                   className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4"
                 >
                   {regularMembers.map((member, index) => (
-                    <AgentCard key={member.id} member={member} index={index} />
+                    <AgentCard key={member.id} member={member} index={index} expired={expired} />
                   ))}
                 </motion.div>
               </div>
