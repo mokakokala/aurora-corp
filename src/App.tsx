@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { GlitchWrapper } from './components/ui/GlitchWrapper'
+import { IntroSequence } from './components/intro/IntroSequence'
 import { IdentificationPortal } from './components/portal/IdentificationPortal'
 import { Dashboard } from './components/layout/Dashboard'
 import { MembersPage } from './components/pages/MembersPage'
@@ -9,6 +10,7 @@ import { useKonamiCode } from './hooks/useKonamiCode'
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('aurora_auth') === '1')
+  const [introComplete, setIntroComplete] = useState(authenticated)
   const [showMembers, setShowMembers] = useState(false)
   const [showKonami, setShowKonami] = useState(false)
   useKonamiCode(() => setShowKonami(true))
@@ -17,7 +19,12 @@ export default function App() {
     <GlitchWrapper>
       {showKonami && <KonamiOverlay onClose={() => setShowKonami(false)} />}
       <AnimatePresence>
-        {!authenticated && (
+        {!introComplete && (
+          <IntroSequence onComplete={() => setIntroComplete(true)} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {introComplete && !authenticated && (
           <IdentificationPortal onSuccess={() => { sessionStorage.setItem('aurora_auth', '1'); setAuthenticated(true) }} />
         )}
       </AnimatePresence>
