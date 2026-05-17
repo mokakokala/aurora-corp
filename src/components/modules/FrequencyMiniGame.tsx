@@ -61,10 +61,7 @@ function BonusAudioPlayer() {
           onClick={toggle}
           className="flex h-9 w-9 items-center justify-center border border-green-500/60 bg-green-500/15 text-green-400 hover:bg-green-500/25 transition-all flex-shrink-0"
         >
-          {playing
-            ? <Pause className="h-3.5 w-3.5" />
-            : <Play className="h-3.5 w-3.5 ml-0.5" />
-          }
+          {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
         </button>
         <div className="flex-1 space-y-1.5">
           <div className="h-0.5 w-full bg-green-900/40 overflow-hidden">
@@ -96,7 +93,6 @@ export function FrequencyMiniGame({
   const rafRef = useRef<number>(0)
   const timeRef = useRef(0)
   const sliderRef = useRef(50)
-  const lockedRef = useRef(initiallyUnlocked)
 
   const [slider, setSlider] = useState(50)
   const [holdProgress, setHoldProgress] = useState(0)
@@ -107,13 +103,21 @@ export function FrequencyMiniGame({
   const gainRef = useRef<GainNode | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
 
+  // Keep onUnlock always up-to-date without making it a dep
+  const onUnlockRef = useRef(onUnlock)
+  onUnlockRef.current = onUnlock
+
   const isInZone = !locked && Math.abs(slider - TARGET) <= TOLERANCE
+
+  // Keep a ref so the hold tick can check current zone status without stale closure
+  const isInZoneRef = useRef(isInZone)
+  isInZoneRef.current = isInZone
 
   useEffect(() => { sliderRef.current = slider }, [slider])
 
   // Canvas draw loop
   useEffect(() => {
-    if (initiallyUnlocked) return // no canvas needed if already unlocked
+    if (initiallyUnlocked) return
 
     const canvas = canvasRef.current
     if (!canvas) return
@@ -129,7 +133,7 @@ export function FrequencyMiniGame({
     const cycles = 8
 
     const draw = () => {
-      const dist = lockedRef.current ? 0 : getDistortion(sliderRef.current)
+      const dist = getDistortion(sliderRef.current)
       const t = timeRef.current
       const freqMult = 1 + ((sliderRef.current - TARGET) / Math.max(TARGET, 1)) * 0.45
 
@@ -144,7 +148,6 @@ export function FrequencyMiniGame({
         ctx.stroke()
       }
 
-      // Green target wave
       ctx.beginPath()
       ctx.strokeStyle = `rgba(34,197,94,${0.3 + (1 - dist) * 0.6})`
       ctx.lineWidth = 1.8
@@ -154,7 +157,6 @@ export function FrequencyMiniGame({
       }
       ctx.stroke()
 
-      // Red noisy wave
       ctx.beginPath()
       ctx.strokeStyle = `rgba(239,68,68,${0.3 + dist * 0.6})`
       ctx.lineWidth = 1.8
@@ -173,7 +175,7 @@ export function FrequencyMiniGame({
     return () => cancelAnimationFrame(rafRef.current)
   }, [initiallyUnlocked])
 
-  // Audio noise (only when not already unlocked)
+  // Audio noise
   useEffect(() => {
     if (initiallyUnlocked) return
 
@@ -183,20 +185,16 @@ export function FrequencyMiniGame({
     try {
       actx = new AudioContext()
       audioCtxRef.current = actx
-
       const sr = actx.sampleRate
       const buf = actx.createBuffer(1, sr * 3, sr)
       const data = buf.getChannelData(0)
       for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1
-
       source = actx.createBufferSource()
       source.buffer = buf
       source.loop = true
-
       const gain = actx.createGain()
       gain.gain.value = getDistortion(sliderRef.current) * 0.18
       gainRef.current = gain
-
       source.connect(gain)
       gain.connect(actx.destination)
       actx.resume().then(() => source!.start())
@@ -218,13 +216,15 @@ export function FrequencyMiniGame({
     )
   }, [slider, locked])
 
-  // Hold progress — only start/stop based on isInZone
+  // Hold timer — only re-runs when isInZone flips (not on every slider move within zone)
+  // Uses isInZoneRef inside tick to check current state without stale closure
+  // onUnlock called via ref to avoid this effect re-running on every parent render
   useEffect(() => {
     cancelAnimationFrame(holdRafRef.current)
 
     if (!isInZone) {
-      // Don't reset if we just locked (locked handles its own visual)
-      if (!lockedRef.current) {
+      // Only reset progress if we didn't just lock
+      if (!locked) {
         holdStartRef.current = null
         setHoldProgress(0)
       }
@@ -234,6 +234,13 @@ export function FrequencyMiniGame({
     holdStartRef.current = performance.now()
 
     const tick = () => {
+      // If user moved out of zone since this frame was scheduled, stop
+      if (!isInZoneRef.current) {
+        setHoldProgress(0)
+        holdStartRef.current = null
+        return
+      }
+
       const elapsed = performance.now() - (holdStartRef.current ?? performance.now())
       const progress = Math.min(elapsed / HOLD_MS, 1)
       setHoldProgress(progress)
@@ -241,19 +248,17 @@ export function FrequencyMiniGame({
       if (progress < 1) {
         holdRafRef.current = requestAnimationFrame(tick)
       } else {
-        // Silence noise
         if (gainRef.current && audioCtxRef.current) {
           gainRef.current.gain.setTargetAtTime(0, audioCtxRef.current.currentTime, 0.4)
         }
-        lockedRef.current = true
         setLocked(true)
-        onUnlock()
+        onUnlockRef.current()
       }
     }
 
     holdRafRef.current = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(holdRafRef.current)
-  }, [isInZone, onUnlock])
+  }, [isInZone, locked]) // locked in deps so we don't reset after success
 
   return (
     <motion.div
@@ -277,7 +282,6 @@ export function FrequencyMiniGame({
       >
         <div className="pointer-events-none absolute inset-0 scanlines opacity-10 z-10" />
 
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-orange-500/40 px-4 py-3">
           <div className="flex items-center gap-2">
             <div className={`h-1.5 w-1.5 rounded-full blink ${locked ? 'bg-green-500' : 'bg-orange-500'}`} />
@@ -293,7 +297,6 @@ export function FrequencyMiniGame({
         <div className="p-5 space-y-5">
           <AnimatePresence mode="wait">
             {locked ? (
-              /* ── UNLOCKED STATE ── */
               <motion.div
                 key="unlocked"
                 initial={{ opacity: 0, y: 8 }}
@@ -307,19 +310,16 @@ export function FrequencyMiniGame({
                 <BonusAudioPlayer />
               </motion.div>
             ) : (
-              /* ── GAME STATE ── */
               <motion.div key="game" className="space-y-5">
                 <p className="text-xs text-orange-500/80 leading-relaxed tracking-wide">
                   Signal parasite détecté sur une fréquence adjacente. Déplacez le curseur pour stabiliser manuellement le canal et intercepter la transmission cachée.
                 </p>
 
-                {/* Wave canvas */}
                 <div className="border border-orange-500/25 bg-black/70 p-3 relative overflow-hidden">
                   <canvas ref={canvasRef} className="w-full block" style={{ height: 90 }} />
                   <div className="pointer-events-none absolute inset-0 interference-lines opacity-15" />
                 </div>
 
-                {/* Legend */}
                 <div className="flex items-center gap-6 text-xs text-orange-700 tracking-widest">
                   <div className="flex items-center gap-2">
                     <div className="h-px w-5 bg-green-500/60" />
@@ -331,7 +331,6 @@ export function FrequencyMiniGame({
                   </div>
                 </div>
 
-                {/* Frequency + slider */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-orange-700 tracking-widest">{FREQ_MIN.toFixed(1)} MHz</span>
@@ -357,7 +356,6 @@ export function FrequencyMiniGame({
                   />
                 </div>
 
-                {/* Status + hold progress */}
                 <div className="space-y-2">
                   <span className={`text-xs tracking-widest uppercase ${isInZone ? 'text-green-500' : 'text-orange-700'}`}>
                     {isInZone
@@ -365,10 +363,7 @@ export function FrequencyMiniGame({
                       : '○ Signal instable — ajustez la fréquence'}
                   </span>
                   <div className="h-0.5 w-full bg-orange-900/30 overflow-hidden">
-                    <div
-                      className="h-full bg-green-500"
-                      style={{ width: `${holdProgress * 100}%` }}
-                    />
+                    <div className="h-full bg-green-500" style={{ width: `${holdProgress * 100}%` }} />
                   </div>
                 </div>
               </motion.div>
