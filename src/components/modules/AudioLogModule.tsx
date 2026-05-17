@@ -18,90 +18,6 @@ const VU_METER_CONFIG = Array.from({ length: 20 }, () => ({
   duration: 0.15 + Math.random() * 0.25,
 }))
 
-// Second audio player — own WaveSurfer instance, renders only when unlocked
-function BonusAudioPlayer({ isOverride }: { isOverride: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [isReady, setIsReady] = useState(false)
-
-  const { wavesurfer, isPlaying, currentTime } = useWavesurfer({
-    container: containerRef,
-    url: `${import.meta.env.BASE_URL}signal_b.mp3`,
-    waveColor: isOverride ? 'rgba(34,197,94,0.85)' : 'rgba(249,115,22,0.85)',
-    progressColor: isOverride ? '#22c55e' : '#f97316',
-    cursorColor: 'rgba(255,255,255,0.8)',
-    height: 60,
-    barWidth: 2,
-    barGap: 1,
-    barRadius: 1,
-    normalize: true,
-  })
-
-  useEffect(() => {
-    if (!wavesurfer) return
-    return wavesurfer.on('ready', () => setIsReady(true))
-  }, [wavesurfer])
-
-  useEffect(() => {
-    if (!wavesurfer) return
-    wavesurfer.setOptions({
-      waveColor: isOverride ? 'rgba(34,197,94,0.85)' : 'rgba(249,115,22,0.85)',
-      progressColor: isOverride ? '#22c55e' : '#f97316',
-    })
-  }, [wavesurfer, isOverride])
-
-  const duration = wavesurfer?.getDuration() ?? 0
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="border border-orange-400/40 bg-black/60 p-4 space-y-3"
-      style={{ boxShadow: '0 0 20px rgba(249,115,22,0.08)' }}
-    >
-      <div className="flex items-center gap-2 border-b border-orange-500/20 pb-3">
-        <div className="h-1.5 w-1.5 rounded-full bg-orange-400 blink" />
-        <p className="text-xs tracking-[0.3em] text-orange-400 uppercase">
-          Canal 38.5 MHz — Transmission interceptée
-        </p>
-      </div>
-
-      <div className="relative">
-        <div ref={containerRef} className="w-full" />
-        {!isReady && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <motion.span
-              className="text-xs text-orange-500 font-terminal tracking-widest"
-              animate={{ opacity: [1, 0.3, 1] }}
-              transition={{ repeat: Infinity, duration: 1.2 }}
-            >
-              Déchiffrement du signal...
-            </motion.span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex items-center gap-4">
-        <motion.button
-          onClick={() => wavesurfer?.playPause()}
-          disabled={!isReady}
-          className="flex h-9 w-9 items-center justify-center border border-orange-500/60 bg-orange-500/15 text-orange-400 transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-400 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
-          whileTap={{ scale: 0.92 }}
-        >
-          {isPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
-        </motion.button>
-        <div className="flex-1 space-y-1">
-          <div className="flex justify-between text-xs font-terminal text-orange-400">
-            <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(duration)}</span>
-          </div>
-        </div>
-        <Volume2 className="h-4 w-4 text-orange-500 flex-shrink-0" />
-      </div>
-    </motion.div>
-  )
-}
-
 export function AudioLogModule() {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isReady, setIsReady] = useState(false)
@@ -140,7 +56,7 @@ export function AudioLogModule() {
   const handleUnlock = () => {
     sessionStorage.setItem('aurora_freq', '1')
     setFreqUnlocked(true)
-    setShowMiniGame(false)
+    // Modal stays open — the second player appears inside it
   }
 
   const duration = wavesurfer?.getDuration() ?? 0
@@ -151,6 +67,7 @@ export function AudioLogModule() {
         <AnimatePresence>
           {showMiniGame && (
             <FrequencyMiniGame
+              initiallyUnlocked={freqUnlocked}
               onUnlock={handleUnlock}
               onClose={() => setShowMiniGame(false)}
             />
@@ -174,13 +91,8 @@ export function AudioLogModule() {
         {/* Metadata */}
         <div className="grid grid-cols-2 gap-2 text-xs font-terminal text-orange-500 tracking-widest">
           <button
-            onClick={() => !freqUnlocked && setShowMiniGame(true)}
-            className={`text-left transition-colors duration-150 ${
-              freqUnlocked
-                ? 'text-orange-500 cursor-default'
-                : 'hover:text-orange-300 cursor-pointer'
-            }`}
-            title={freqUnlocked ? undefined : 'Accéder aux autres fréquences'}
+            onClick={() => setShowMiniGame(true)}
+            className="text-left cursor-pointer hover:text-orange-300 transition-colors duration-150"
           >
             FRÉQUENCE: {freqUnlocked ? '38.5 MHz ✓' : '148.5 MHz'}
           </button>
@@ -243,11 +155,6 @@ export function AudioLogModule() {
             <Volume2 className="h-4 w-4 text-orange-500 flex-shrink-0" />
           </div>
         </div>
-
-        {/* Bonus player — visible once frequency unlocked */}
-        <AnimatePresence>
-          {freqUnlocked && <BonusAudioPlayer isOverride={isOverride} />}
-        </AnimatePresence>
 
         <p className="text-center text-xs text-orange-500 font-terminal tracking-widest">
           Tentative de récupération n°9
