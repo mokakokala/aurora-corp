@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react'
 
 type Stage = 'logo' | 'frame1' | 'frame2'
 
-const RED_FILTER = 'brightness(0) saturate(100%) invert(12%) sepia(96%) saturate(7000%) hue-rotate(358deg) brightness(90%)'
+const ORANGE_FILTER = 'brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(800%) hue-rotate(345deg) brightness(95%)'
 
 const BULLET_ITEMS_1 = [
   ['Un compte à rebours', "une fois terminé, il dévoilera bien plus d'informations dans tout le dashboard."],
@@ -60,7 +60,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
               src={`${import.meta.env.BASE_URL}Logo troupe.png`}
               alt="A.U.R.O.R.A Corp"
               className="w-56 sm:w-72 md:w-96"
-              style={{ filter: RED_FILTER }}
+              style={{ filter: ORANGE_FILTER }}
               draggable={false}
             />
             <AnimatePresence>
