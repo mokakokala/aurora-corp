@@ -178,7 +178,7 @@ export function AudioLogModule() {
             className={`text-left transition-colors duration-150 ${
               freqUnlocked
                 ? 'text-orange-500 cursor-default'
-                : 'hover:text-orange-300 underline decoration-dotted cursor-pointer'
+                : 'hover:text-orange-300 cursor-pointer'
             }`}
             title={freqUnlocked ? undefined : 'Accéder aux autres fréquences'}
           >
