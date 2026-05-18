@@ -28,7 +28,6 @@ export function PunishmentModal({
 }) {
   const isFirst = punishmentNumber === 1
   const [phase, setPhase] = useState<Phase>(isFirst ? 'listening' : 'bypass')
-  const [bypassed, setBypassed] = useState(false)
   const [bypassInput, setBypassInput] = useState('')
   const [bypassError, setBypassError] = useState(false)
 
@@ -58,11 +57,23 @@ export function PunishmentModal({
     a.play().catch(() => {})
   }, [phase])
 
-  const handleBypassSubmit = () => {
+  const handleBypassSubmit = async () => {
     if (bypassInput.trim().toLowerCase() === 'crousty') {
-      setBypassed(true)
       audioRef.current?.pause()
-      setPhase('rating')
+      try {
+        await supabase.from(PUNISHMENT_TABLE).insert([{
+          prenom_totem: identity?.prenom_totem ?? 'inconnu',
+          age: identity?.age ?? null,
+          ip: identity?.ip ?? null,
+          city: identity?.city ?? null,
+          punishment_number: punishmentNumber,
+          bypassed: true,
+          rating: null,
+          comment: null,
+          punished_at: new Date().toISOString(),
+        }])
+      } catch {}
+      onClose()
     } else {
       setBypassError(true)
       setTimeout(() => setBypassError(false), 2500)
@@ -81,7 +92,7 @@ export function PunishmentModal({
         ip: identity?.ip ?? null,
         city: identity?.city ?? null,
         punishment_number: punishmentNumber,
-        bypassed,
+        bypassed: false,
         rating: Number(rating),
         comment: comment.trim() || null,
         punished_at: new Date().toISOString(),
@@ -226,15 +237,9 @@ export function PunishmentModal({
                 exit={{ opacity: 0, y: -8 }}
                 className="space-y-4"
               >
-                {bypassed ? (
-                  <p className="text-xs text-green-500/80 tracking-wide">
-                    ✓ Bypass accepté. La notation reste obligatoire.
-                  </p>
-                ) : (
-                  <p className="text-xs text-red-400/80 tracking-wide leading-relaxed">
-                    Tu as survécu à l'épreuve. Rends maintenant un jugement objectif.
-                  </p>
-                )}
+                <p className="text-xs text-red-400/80 tracking-wide leading-relaxed">
+                  Tu as survécu à l'épreuve. Rends maintenant un jugement objectif.
+                </p>
 
                 <div className="space-y-2">
                   <label className="block text-xs tracking-[0.25em] text-red-500 uppercase">
