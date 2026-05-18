@@ -30,7 +30,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     if (stage !== 'logo') return
     const hintTimer = setTimeout(() => setShowHint(true), 1200)
-    const advanceTimer = setTimeout(() => setStage('frame1'), 3000)
+    const advanceTimer = setTimeout(() => setStage('frame1'), 5000)
     return () => { clearTimeout(hintTimer); clearTimeout(advanceTimer) }
   }, [stage])
 
