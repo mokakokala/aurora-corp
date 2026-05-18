@@ -89,8 +89,8 @@ export function CountdownModule() {
       const newWrong = wrongAttempts + 1
       setWrongAttempts(newWrong)
       sessionStorage.setItem('aurora_wrong', String(newWrong))
-      if (newWrong % 5 === 0) {
-        setPunishmentNumber(newWrong / 5)
+      if (newWrong % 3 === 0) {
+        setPunishmentNumber(newWrong / 3)
         setShowPunishment(true)
       }
     }
@@ -268,8 +268,8 @@ export function CountdownModule() {
       >
         {isUnlocked ? (
           <motion.a
-            href={`${import.meta.env.BASE_URL}AURORA_Survival_Guide.pdf`}
-            download
+            href={`${import.meta.env.BASE_URL}Carnet%20de%20camp_Troupe%20de%20l'Aurore_Croatie%202026.pdf`}
+            download="Carnet de camp_Troupe de l'Aurore_Croatie 2026.pdf"
             className="flex w-full items-center justify-center gap-3 border border-orange-500/70 bg-orange-500/15 px-6 py-4 text-xs tracking-[0.3em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-400"
             animate={{ boxShadow: ['0 0 0px rgba(249,115,22,0)', '0 0 20px rgba(249,115,22,0.3)', '0 0 0px rgba(249,115,22,0)'] }}
             transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}

@@ -135,7 +135,7 @@ export function PunishmentModal({
         <div className="border-b border-red-500/50 px-5 py-4 flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-red-500 blink" />
           <span className="text-xs tracking-[0.4em] text-red-500 uppercase">
-            Protocole Punition — Erreur #{punishmentNumber * 5}
+            Protocole Punition — Erreur #{punishmentNumber * 3}
           </span>
         </div>
 
@@ -197,7 +197,7 @@ export function PunishmentModal({
               >
                 <p className="text-xs text-red-400/80 tracking-wide leading-relaxed">
                   {isFirst
-                    ? "5 erreurs. Le système t'inflige une peine appropriée. Écoute ce chef-d'œuvre jusqu'à la dernière seconde."
+                    ? "3 erreurs. Le système t'inflige une peine appropriée. Écoute ce chef-d'œuvre jusqu'à la dernière seconde."
                     : "Mauvaise réponse. Les conséquences sont inévitables."}
                 </p>
 
