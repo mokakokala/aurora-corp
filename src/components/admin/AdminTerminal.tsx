@@ -9,7 +9,7 @@ type AuthStep = 'code1' | 'select' | 'sending' | 'code2' | 'verifying' | 'dashbo
 const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-const MASKED_EMAILS = ['mo████@gmail.com', 'ma████@gmail.com']
+const MASKED_EMAILS = ['mo████@gmail.com', 'ma████@gmail.com', 'sl████@gmail.com']
 const FIRST_CODE = '292929'
 
 export function AdminTerminal({ onClose }: { onClose: () => void }) {

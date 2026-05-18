@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
 const FIRST_CODE = '292929'
-const AUTHORIZED_EMAILS = ['mokakokala@gmail.com', 'matthieub117@gmail.com']
+const AUTHORIZED_EMAILS = ['mokakokala@gmail.com', 'matthieub117@gmail.com', 'slgdawans@gmail.com']
 const OTP_EXPIRY_MINUTES = 15
 
 Deno.serve(async (req) => {
