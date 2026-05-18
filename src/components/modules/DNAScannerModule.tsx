@@ -91,6 +91,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const [submittedId, setSubmittedId] = useState('')
   const [showColettePopup, setShowColettePopup] = useState(false)
   const [showFactionPanel, setShowFactionPanel] = useState(false)
+  const [showZoneModal, setShowZoneModal] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -122,6 +123,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setSubmittedId('')
     setShowColettePopup(false)
     setShowFactionPanel(false)
+    setShowZoneModal(false)
   }
 
   const isAurora = /^a\.?u\.?r\.?o\.?r\.?a\.?(\s+corp\.?)?$/i.test(submittedId.trim())
@@ -135,6 +137,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const isAonyx = /a[iï]?onyx/i.test(submittedId)
   const isBison = /bison/i.test(submittedId)
   const isGecko = /gecko/i.test(submittedId)
+  const isCoords = /44[.,]?5170*\d*°?\s*N\s+15[.,]?5313*\d*°?\s*E/i.test(submittedId)
 
   const factionNameMatch = expired ? findFactionByName(submittedId) : null
   const factionMatch = expired && !factionNameMatch ? findFaction(submittedId) : null
@@ -184,6 +187,51 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                 <img
                   src={`${import.meta.env.BASE_URL}colette.PNG`}
                   alt="La Madrina"
+                  className="w-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+
+    {createPortal(
+      <AnimatePresence>
+        {showZoneModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-sm p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            onClick={() => setShowZoneModal(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-sm border-2 border-orange-500/70 bg-black font-terminal"
+              initial={{ scale: 0.92, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 16 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-orange-500/40 px-5 py-3">
+                <div>
+                  <p className="text-sm tracking-wider text-orange-300 font-bold uppercase">Zone classifiée</p>
+                  <p className="text-xs text-orange-600 tracking-widest mt-0.5">44.517008° N — 15.53136° E</p>
+                </div>
+                <button
+                  onClick={() => setShowZoneModal(false)}
+                  className="text-orange-600 hover:text-orange-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-1">
+                <img
+                  src={`${import.meta.env.BASE_URL}zone_mysterieuse.jpg`}
+                  alt="Zone mystérieuse"
                   className="w-full object-cover"
                 />
               </div>
@@ -346,6 +394,8 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                 ? 'border-orange-400/60 bg-orange-900/10'
                 : isAndalouse
                 ? 'border-yellow-500/60 bg-yellow-900/10'
+                : isCoords
+                ? 'border-orange-400/80 bg-orange-900/15'
                 : factionNameMatch || factionMatch
                 ? 'border-orange-400/80 bg-orange-900/15'
                 : 'border-red-500/40 bg-red-900/10'
@@ -435,6 +485,21 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                     className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
                   >
                     Découvrir les {factionMatch.faction}
+                  </button>
+                </>
+              ) : isCoords ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    COORDONNÉES RECONNUES — ZONE D'INTÉRÊT CLASSIFIÉE
+                  </p>
+                  <button
+                    onClick={() => setShowZoneModal(true)}
+                    className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                  >
+                    Découvrir cette zone mystérieuse.
                   </button>
                 </>
               ) : isAtele ? (
