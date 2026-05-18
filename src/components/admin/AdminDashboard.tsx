@@ -12,7 +12,7 @@ import {
 import { supabase } from '../../lib/supabase'
 import {
   SUPABASE_TABLE, OVERRIDE_LOG_TABLE, DNA_SCAN_TABLE,
-  KONAMI_TABLE, PUNISHMENT_TABLE, FAILED_OVERRIDE_TABLE,
+  KONAMI_TABLE, PUNISHMENT_TABLE, FAILED_OVERRIDE_TABLE, AUDIO_UNLOCK_TABLE,
 } from '../../config/constants'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -41,6 +41,10 @@ interface PunishmentLog {
 interface FailedLog {
   id: number; prenom_totem: string; age: number | null
   failed_at: string; ip: string | null; city: string | null
+}
+interface AudioUnlock {
+  id: number; prenom_totem: string; age: number | null
+  unlocked_at: string; ip: string | null; city: string | null
 }
 
 // ─── Faction lookup (mirrors DNAScannerModule logic) ─────────────────────────
@@ -308,16 +312,18 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [konamiLogs, setKonamiLogs] = useState<KonamiLog[]>([])
   const [punishments, setPunishments] = useState<PunishmentLog[]>([])
   const [failedLogs, setFailedLogs] = useState<FailedLog[]>([])
+  const [audioUnlocks, setAudioUnlocks] = useState<AudioUnlock[]>([])
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [s, o, d, k, p, f] = await Promise.all([
+    const [s, o, d, k, p, f, a] = await Promise.all([
       supabase.from(SUPABASE_TABLE).select('*').order('created_at', { ascending: false }),
       supabase.from(OVERRIDE_LOG_TABLE).select('*').order('override_at', { ascending: false }),
       supabase.from(DNA_SCAN_TABLE).select('*').order('created_at', { ascending: false }),
       supabase.from(KONAMI_TABLE).select('*').order('created_at', { ascending: false }),
       supabase.from(PUNISHMENT_TABLE).select('*').order('punished_at', { ascending: false }),
       supabase.from(FAILED_OVERRIDE_TABLE).select('*').order('failed_at', { ascending: false }),
+      supabase.from(AUDIO_UNLOCK_TABLE).select('*').order('unlocked_at', { ascending: false }),
     ])
     setScouts((s.data ?? []) as ScoutLogin[])
     setOverrides((o.data ?? []) as OverrideLog[])
@@ -325,6 +331,7 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
     setKonamiLogs((k.data ?? []) as KonamiLog[])
     setPunishments((p.data ?? []) as PunishmentLog[])
     setFailedLogs((f.data ?? []) as FailedLog[])
+    setAudioUnlocks((a.data ?? []) as AudioUnlock[])
     setLoading(false)
   }, [])
 
@@ -352,7 +359,7 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
   const ratingData = buildRatingData(punishments)
 
   // Table tabs
-  const TABS = ['Scouts', 'Scans ADN', 'Overrides', 'Punitions', 'Konami', 'Tentatives']
+  const TABS = ['Scouts', 'Scans ADN', 'Overrides', 'Punitions', 'Konami', 'Tentatives', 'Audio']
 
   const renderTable = (tab: number) => {
     switch (tab) {
@@ -399,6 +406,13 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
           columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date']}
           rows={failedLogs.map(f => [
             f.prenom_totem, f.age, f.city, f.ip, fmtBrussels(f.failed_at)
+          ])}
+        />
+      case 6:
+        return <RawTable
+          columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date débloqué']}
+          rows={audioUnlocks.map(a => [
+            a.prenom_totem, a.age, a.city, a.ip, fmtBrussels(a.unlocked_at)
           ])}
         />
     }
@@ -461,6 +475,8 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
                   sub={`${totalPunishments - bypassed} / ${totalPunishments} punitions`} />
                 <KpiCard icon={BarChart3} label="Note moy. punition" value={avgRating}
                   sub="Sur 10" />
+                <KpiCard icon={Music} label="2ème audio débloqué" value={audioUnlocks.length}
+                  sub="Via le mini-jeu fréquences" />
                 <KpiCard icon={Users} label="Connexions auj." value={
                   scouts.filter(s => {
           const p = getBrusselsParts(s.created_at)
@@ -713,7 +729,7 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
                 {renderTable(activeTab)}
               </motion.div>
               <p className="text-xs text-orange-800 tracking-wider text-right mt-1">
-                {[scouts.length, dnaScans.length, overrides.length, punishments.length, konamiLogs.length, failedLogs.length][activeTab]} entrée(s) — 50 max affichées
+                {[scouts.length, dnaScans.length, overrides.length, punishments.length, konamiLogs.length, failedLogs.length, audioUnlocks.length][activeTab]} entrée(s) — 50 max affichées
               </p>
             </Section>
           </>

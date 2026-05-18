@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Play, Pause, Radio, Volume2 } from 'lucide-react'
 import { useWavesurfer } from '@wavesurfer/react'
 import { FrequencyMiniGame } from './FrequencyMiniGame'
+import { supabase } from '../../lib/supabase'
+import { AUDIO_UNLOCK_TABLE } from '../../config/constants'
 
 function formatTime(s: number): string {
   if (!isFinite(s)) return '00:00'
@@ -56,7 +58,16 @@ export function AudioLogModule() {
   const handleUnlock = () => {
     sessionStorage.setItem('aurora_freq', '1')
     setFreqUnlocked(true)
-    // Modal stays open — the second player appears inside it
+
+    const raw = sessionStorage.getItem('aurora_identity')
+    const identity = raw ? JSON.parse(raw) as { prenom_totem: string; age: number; ip?: string; city?: string } : null
+    supabase.from(AUDIO_UNLOCK_TABLE).insert([{
+      prenom_totem: identity?.prenom_totem ?? 'inconnu',
+      age: identity?.age ?? null,
+      ip: identity?.ip ?? null,
+      city: identity?.city ?? null,
+      unlocked_at: new Date().toISOString(),
+    }]).then(({ error }) => { if (error) console.error('Audio unlock log error:', error) })
   }
 
   const duration = wavesurfer?.getDuration() ?? 0
