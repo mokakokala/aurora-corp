@@ -16,9 +16,9 @@ const BULLET_ITEMS_1 = [
 ] as const
 
 const BULLET_ITEMS_2 = [
-  ['Chaque info se mérite', "un conseil de survivant, gardez vos découvertes pour vous. Ne partagez pas trop vite les anomalies ou les codes que vous trouvez. Sur l'île, toute information partagée à la légère peut avoir de lourdes conséquences sur votre propre aventure. Restez discrets."],
-  ['Authentification biométrique', "pour vous enregistrer sur le réseau, vous devez obligatoirement entrer votre vrai totem et votre vrai âge. Le système d'A.U.R.O.R.A CORP rejettera impitoyablement toute fausse identité."],
-  ['Optimisation hardware', "pour une immersion totale et pour être capable d'exécuter certaines commandes avancées du système, connectez-vous impérativement depuis un ordinateur."],
+  ['Chaque info se mérite', "un conseil de survivant, gardez vos découvertes pour vous. Ne partagez pas trop vite les anomalies ou les codes que vous trouvez. Toute information partagée à la légère peut avoir de lourdes conséquences sur votre propre aventure. Restez discrets."],
+  ['Authentification biométrique', "pour vous enregistrer sur le réseau, vous devez obligatoirement entrer votre vrai totem et votre vrai âge. Le système d'A.U.R.O.R.A CORP ne pardonne pas les fausses identités."],
+  ['Optimisation hardware', "pour une immersion totale et pour être capable d'exécuter certaines commandes avancées du système, connectez-vous depuis un ordinateur."],
 ] as const
 
 export function IntroSequence({ onComplete }: { onComplete: () => void }) {
