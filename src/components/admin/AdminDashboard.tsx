@@ -40,7 +40,7 @@ interface PunishmentLog {
 }
 interface FailedLog {
   id: number; prenom_totem: string; age: number | null
-  failed_at: string; ip: string | null; city: string | null
+  failed_at: string; ip: string | null; city: string | null; code_tried: string | null
 }
 interface AudioUnlock {
   id: number; prenom_totem: string; age: number | null
@@ -403,9 +403,9 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
         />
       case 5:
         return <RawTable
-          columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date']}
+          columns={['Prénom/Totem', 'Âge', 'Code tenté', 'Ville', 'IP', 'Date']}
           rows={failedLogs.map(f => [
-            f.prenom_totem, f.age, f.city, f.ip, fmtBrussels(f.failed_at)
+            f.prenom_totem, f.age, f.code_tried, f.city, f.ip, fmtBrussels(f.failed_at)
           ])}
         />
       case 6:

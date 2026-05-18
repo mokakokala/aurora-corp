@@ -92,6 +92,7 @@ export function CountdownModule() {
         age: identity?.age ?? null,
         ip: identity?.ip ?? null,
         city: identity?.city ?? null,
+        code_tried: overrideCode,
         failed_at: new Date().toISOString(),
       }]).then(({ error }) => { if (error) console.error('Failed override log error:', error) })
 
