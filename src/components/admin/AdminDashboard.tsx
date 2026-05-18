@@ -114,6 +114,27 @@ function AuroraTooltip({ active, payload, label }: { active?: boolean; payload?:
   )
 }
 
+// ─── Brussels timezone helpers ───────────────────────────────────────────────
+
+function getBrusselsParts(iso: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Brussels',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date(iso))
+  const p: Record<string, string> = {}
+  for (const part of parts) p[part.type] = part.value
+  return p
+}
+
+function fmtBrussels(iso: string): string {
+  return new Date(iso).toLocaleString('fr-BE', {
+    timeZone: 'Europe/Brussels',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  })
+}
+
 // ─── Data helpers ─────────────────────────────────────────────────────────────
 
 type Granularity = 'day' | 'hour' | 'minute'
@@ -121,12 +142,12 @@ type Granularity = 'day' | 'hour' | 'minute'
 function buildConnectionsData(logins: ScoutLogin[], granularity: Granularity) {
   const counts: Record<string, number> = {}
   for (const l of logins) {
-    const ts = l.created_at
+    const p = getBrusselsParts(l.created_at)
     const key = granularity === 'day'
-      ? ts.slice(0, 10)
+      ? `${p.year}-${p.month}-${p.day}`
       : granularity === 'hour'
-      ? ts.slice(0, 13)
-      : ts.slice(0, 16)
+      ? `${p.year}-${p.month}-${p.day}T${p.hour}`
+      : `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`
     counts[key] = (counts[key] || 0) + 1
   }
   return Object.entries(counts)
@@ -141,8 +162,7 @@ function buildConnectionsData(logins: ScoutLogin[], granularity: Granularity) {
         const [, m, d] = date.split('-')
         label = `${d}/${m} ${h}h`
       } else {
-        const t = key.split('T')[1] ?? key.slice(11)
-        label = t.slice(0, 5)
+        label = key.split('T')[1]?.slice(0, 5) ?? key.slice(11)
       }
       return { time: label, count }
     })
@@ -340,21 +360,21 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
         return <RawTable
           columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date']}
           rows={scouts.slice(0, 50).map(s => [
-            s.prenom_totem, s.age, s.city, s.ip, s.created_at.slice(0, 16).replace('T', ' ')
+            s.prenom_totem, s.age, s.city, s.ip, fmtBrussels(s.created_at)
           ])}
         />
       case 1:
         return <RawTable
           columns={['Scanné', 'Enregistré sous', 'Ville', 'IP', 'Date']}
           rows={dnaScans.slice(0, 50).map(d => [
-            d.scanned_id, d.logged_as, d.city, d.ip, d.created_at.slice(0, 16).replace('T', ' ')
+            d.scanned_id, d.logged_as, d.city, d.ip, fmtBrussels(d.created_at)
           ])}
         />
       case 2:
         return <RawTable
           columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date Override']}
           rows={overrides.map(o => [
-            o.prenom_totem, o.age, o.city, o.ip, o.override_at.slice(0, 16).replace('T', ' ')
+            o.prenom_totem, o.age, o.city, o.ip, fmtBrussels(o.override_at)
           ])}
         />
       case 3:
@@ -364,21 +384,21 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
             p.prenom_totem, p.punishment_number,
             p.bypassed ? 'Oui' : 'Non',
             p.rating ?? null, p.comment,
-            p.punished_at.slice(0, 16).replace('T', ' ')
+            fmtBrussels(p.punished_at)
           ])}
         />
       case 4:
         return <RawTable
           columns={['Totem/Prénom', 'Ville', 'IP', 'Date']}
           rows={konamiLogs.map(k => [
-            k.totem, k.city, k.ip, k.created_at.slice(0, 16).replace('T', ' ')
+            k.totem, k.city, k.ip, fmtBrussels(k.created_at)
           ])}
         />
       case 5:
         return <RawTable
           columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date']}
           rows={failedLogs.map(f => [
-            f.prenom_totem, f.age, f.city, f.ip, f.failed_at.slice(0, 16).replace('T', ' ')
+            f.prenom_totem, f.age, f.city, f.ip, fmtBrussels(f.failed_at)
           ])}
         />
     }
@@ -442,7 +462,11 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
                 <KpiCard icon={BarChart3} label="Note moy. punition" value={avgRating}
                   sub="Sur 10" />
                 <KpiCard icon={Users} label="Connexions auj." value={
-                  scouts.filter(s => s.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10)).length
+                  scouts.filter(s => {
+          const p = getBrusselsParts(s.created_at)
+          const today = getBrusselsParts(new Date().toISOString())
+          return p.year === today.year && p.month === today.month && p.day === today.day
+        }).length
                 } sub={new Date().toLocaleDateString('fr-FR')} />
               </div>
             </Section>
