@@ -10,6 +10,7 @@ const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 const MASKED_EMAILS = ['mo████@gmail.com', 'ma████@gmail.com']
+const FIRST_CODE = '292929'
 
 export function AdminTerminal({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<AuthStep>('code1')
@@ -20,6 +21,11 @@ export function AdminTerminal({ onClose }: { onClose: () => void }) {
 
   const handleCode1 = () => {
     if (!code1.trim()) return
+    if (code1 !== FIRST_CODE) {
+      setErrorMsg('Code invalide')
+      setCode1('')
+      return
+    }
     setErrorMsg('')
     setStep('select')
   }
