@@ -4,6 +4,7 @@ import { Lock, Download, Radio, KeyRound } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
 import { TARGET_DATE, OVERRIDE_LOG_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
+import { PunishmentModal } from './PunishmentModal'
 
 const OVERRIDE_CODE = '7492'
 const WEAK_CODES = new Set(['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999','1234','2929','2933','2026','2626','2525'])
@@ -39,6 +40,12 @@ export function CountdownModule() {
   const [overrideStatus, setOverrideStatus] = useState<'idle' | 'accepted' | 'rejected' | 'mocked'>('idle')
   const [manualUnlock, setManualUnlock] = useState(() => sessionStorage.getItem('aurora_override') === '1')
 
+  const [wrongAttempts, setWrongAttempts] = useState(
+    () => parseInt(sessionStorage.getItem('aurora_wrong') ?? '0', 10)
+  )
+  const [showPunishment, setShowPunishment] = useState(false)
+  const [punishmentNumber, setPunishmentNumber] = useState(1)
+
   const isUnlocked = expired || manualUnlock
 
   if (manualUnlock) document.documentElement.classList.add('override-active')
@@ -73,19 +80,31 @@ export function CountdownModule() {
         setManualUnlock(true)
         document.documentElement.classList.add('override-active')
       }, 600)
-    } else if (WEAK_CODES.has(overrideCode)) {
-      setOverrideStatus('mocked')
-      setTimeout(() => setOverrideStatus('idle'), 4000)
-      setOverrideCode('')
     } else {
-      setOverrideStatus('rejected')
-      setTimeout(() => setOverrideStatus('idle'), 2000)
+      const isMocked = WEAK_CODES.has(overrideCode)
+      setOverrideStatus(isMocked ? 'mocked' : 'rejected')
+      setTimeout(() => setOverrideStatus('idle'), isMocked ? 4000 : 2000)
       setOverrideCode('')
+
+      const newWrong = wrongAttempts + 1
+      setWrongAttempts(newWrong)
+      sessionStorage.setItem('aurora_wrong', String(newWrong))
+      if (newWrong % 5 === 0) {
+        setPunishmentNumber(newWrong / 5)
+        setShowPunishment(true)
+      }
     }
   }
 
   return (
     <>
+    {showPunishment && (
+      <PunishmentModal
+        punishmentNumber={punishmentNumber}
+        onClose={() => setShowPunishment(false)}
+      />
+    )}
+
     {/* Popup sorti du motion.div opacity pour ne pas hériter de son opacité */}
     <AnimatePresence>
       {showWarning && (
