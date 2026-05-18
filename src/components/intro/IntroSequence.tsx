@@ -7,11 +7,12 @@ type Stage = 'logo' | 'frame1' | 'frame2'
 const ORANGE_FILTER = 'brightness(0) saturate(100%) invert(62%) sepia(90%) saturate(800%) hue-rotate(345deg) brightness(95%)'
 
 const BULLET_ITEMS_1 = [
-  ['Un compte à rebours', "une fois terminé, il dévoilera bien plus d'informations dans tout le dashboard."],
-  ['Un document classifié', "en récoltant des indices dissimulés, vous pourrez reconstituer un code d'accès secret permettant de déverrouiller un précieux document crypté."],
+  ['Un compte à rebours', "une fois terminé, il dévoilera bien plus d'informations dans tout le système…"],
+  ['Un document classifié', "qui, à l'aide d'un certain code, serait peut-être disponible bien avant le compte à rebours — à vous de fouiller…"],
   ["L'organigramme de la firme", "il existe un moyen d'intercepter les dossiers confidentiels et de voir les noms et l'organigramme des membres de l'A.U.R.O.R.A CORP."],
-  ['Un VRAI apéro à gagner', "une des brèches dans le dashboard vous permet de décrocher une récompense physique pendant le camp. Attention : pour valider ce bonus, il faut que l'écran affiche littéralement et explicitement le message \"Tu as gagné un apéro\". Ne confondez pas cette récompense avec les autres anomalies !"],
-  ['Une apparition mystère', "les rumeurs disent qu'il est possible d'apercevoir le légendaire \"J en pétard\" quelque part dans le système..."],
+  ['Une véritable récompense physique', "une des brèches dans le système vous permet de décrocher une récompense qui va vraiment vous mettre fort dans le bueno pendant le camp (réservé aux 5 premiers à trouver)."],
+  ['Une apparition mystère', "les rumeurs disent qu'il est possible d'apercevoir le rappeur préféré d'Obi-Wan Kenobi quelque part dans le système..."],
+  ['Une musique en exclu', "le tout nouveau son du premier youtubeur de France serait disponible en avant-première…"],
 ] as const
 
 const BULLET_ITEMS_2 = [
@@ -99,7 +100,7 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
 
             <div className="overflow-y-auto max-h-[46vh] space-y-4 text-xs text-orange-200/80 leading-relaxed tracking-wide pr-2">
               <p>
-                Le dashboard interne et ultra-sécurisé d'A.U.R.O.R.A CORP a fuité. Vous n'êtes absolument pas censé être connecté à ce système, mais la brèche est ouverte... profitez-en. Prenez le temps de fouiller ce système dans ses moindres recoins. Chaque section, chaque élément et chaque pixel cache des secrets. Rien n'a été laissé au hasard, et ce que vous découvrirez ici pourrait s'avérer vital pour votre survie très prochainement.
+                Le dashboard interne et ultra-sécurisé d'A.U.R.O.R.A CORP a fuité. Vous n'êtes absolument pas censé être connecté à ce système, mais la brèche est ouverte… profitez-en. Prenez le temps de fouiller ce système dans ses moindres recoins. Chaque section, chaque élément et chaque pixel cache des secrets. Rien n'a été laissé au hasard, et ce que vous découvrirez ici pourrait s'avérer vital pour votre survie très prochainement.
               </p>
               <div className="space-y-3">
                 <p className="text-orange-500 tracking-widest uppercase text-xs">
