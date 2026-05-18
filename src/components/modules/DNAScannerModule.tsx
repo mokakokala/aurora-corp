@@ -78,7 +78,7 @@ function findFaction(id: string): { memberName: string; faction: string } | null
   if (!id.trim()) return null
   const normalized = normalizeName(id)
   for (const [name, faction] of MEMBER_FACTIONS) {
-    if (normalized.includes(normalizeName(name))) {
+    if (normalized === normalizeName(name)) {
       return { memberName: name, faction }
     }
   }
@@ -126,17 +126,18 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setShowZoneModal(false)
   }
 
+  const n = normalizeName(submittedId)
   const isAurora = /^a\.?u\.?r\.?o\.?r\.?a\.?(\s+corp\.?)?$/i.test(submittedId.trim())
-  const isColette = /colette/i.test(submittedId)
-  const isAndalouse = /andalouse|pauwels/i.test(submittedId)
-  const isMagot = /magot/i.test(submittedId)
-  const isSouslik = /souslik/i.test(submittedId)
-  const isAtele = /atele/i.test(submittedId)
-  const isSaiga = /sa[iï]ga/i.test(submittedId)
-  const isNagor = /nagor/i.test(submittedId)
-  const isAonyx = /a[iï]?onyx/i.test(submittedId)
-  const isBison = /bison/i.test(submittedId)
-  const isGecko = /gecko/i.test(submittedId)
+  const isColette = n === 'colette'
+  const isAndalouse = n === 'andalouse' || n === 'pauwels'
+  const isMagot = n === 'magot'
+  const isSouslik = n === 'souslik'
+  const isAtele = n === 'atele'
+  const isSaiga = n === 'saiga'
+  const isNagor = n === 'nagor'
+  const isAonyx = n === 'aonyx' || n === 'aionyx'
+  const isBison = n === 'bison'
+  const isGecko = n === 'gecko'
   const isCoords = /44[.,]?5170*\d*°?\s*N\s+15[.,]?5313*\d*°?\s*E/i.test(submittedId)
 
   const factionNameMatch = expired ? findFactionByName(submittedId) : null
