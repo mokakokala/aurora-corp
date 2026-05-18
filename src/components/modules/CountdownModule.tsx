@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Lock, Download, Radio, KeyRound } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
-import { TARGET_DATE, OVERRIDE_LOG_TABLE } from '../../config/constants'
+import { TARGET_DATE, OVERRIDE_LOG_TABLE, FAILED_OVERRIDE_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
 import { PunishmentModal } from './PunishmentModal'
 
@@ -84,6 +84,17 @@ export function CountdownModule() {
       const isMocked = WEAK_CODES.has(overrideCode)
       setOverrideStatus(isMocked ? 'mocked' : 'rejected')
       setTimeout(() => setOverrideStatus('idle'), isMocked ? 4000 : 2000)
+
+      const raw = sessionStorage.getItem('aurora_identity')
+      const identity = raw ? JSON.parse(raw) as { prenom_totem: string; age: number; ip?: string; city?: string } : null
+      supabase.from(FAILED_OVERRIDE_TABLE).insert([{
+        prenom_totem: identity?.prenom_totem ?? 'inconnu',
+        age: identity?.age ?? null,
+        ip: identity?.ip ?? null,
+        city: identity?.city ?? null,
+        failed_at: new Date().toISOString(),
+      }]).then(({ error }) => { if (error) console.error('Failed override log error:', error) })
+
       setOverrideCode('')
 
       const newWrong = wrongAttempts + 1

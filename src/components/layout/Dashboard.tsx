@@ -9,6 +9,7 @@ import { CountdownModule } from '../modules/CountdownModule'
 import { RadarMapModule } from '../modules/RadarMapModule'
 import { DNAScannerModule } from '../modules/DNAScannerModule'
 import { AudioLogModule } from '../modules/AudioLogModule'
+import { AdminTerminal } from '../admin/AdminTerminal'
 
 const TABS = [
   { id: 'countdown', label: 'Compte à Rebours', short: 'Compte', icon: Timer, component: CountdownModule },
@@ -40,6 +41,9 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
   const [direction, setDirection] = useState(1)
   const activeCount = usePresence()
   useTabTitle()
+
+  const [adminClicks, setAdminClicks] = useState(0)
+  const [adminOpen, setAdminOpen] = useState(false)
 
   // Easter egg 7 — corruption du titre au clic sur le point
   const [dotClicks, setDotClicks] = useState(0)
@@ -79,6 +83,8 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
 
   return (
     <>
+    {adminOpen && <AdminTerminal onClose={() => setAdminOpen(false)} />}
+
     {/* Easter egg 13 — overlay jour J */}
     <AnimatePresence>
       {showDayJ && (
@@ -169,7 +175,17 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
               </motion.span>
             </AnimatePresence>
           </div>
-          <span className="text-xs text-orange-500 tracking-widest hidden sm:block">
+          <span
+            className="text-xs text-orange-500 tracking-widest hidden sm:block cursor-default select-none"
+            onClick={() => {
+              const next = adminClicks + 1
+              setAdminClicks(next)
+              if (next >= 5) {
+                setAdminOpen(true)
+                setAdminClicks(0)
+              }
+            }}
+          >
             TERMINAL ACTIF — CONNEXION SÉCURISÉE
           </span>
         </div>
