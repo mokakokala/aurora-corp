@@ -97,6 +97,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const [showZoneModal, setShowZoneModal] = useState(false)
   const [showAsheraVideo, setShowAsheraVideo] = useState(false)
   const [showGeckoVideo, setShowGeckoVideo] = useState(false)
+  const [showKangalVideo, setShowKangalVideo] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -131,6 +132,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setShowZoneModal(false)
     setShowAsheraVideo(false)
     setShowGeckoVideo(false)
+    setShowKangalVideo(false)
   }
 
   const n = normalizeName(submittedId)
@@ -148,6 +150,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const isCoords = /44[.,]?5170*\d*°?\s*N\s+15[.,]?5313*\d*°?\s*E/i.test(submittedId)
 
   const isAshera = !expired && /ashera/i.test(submittedId)
+  const isKangal = !expired && /kangal/i.test(submittedId)
   const factionNameMatch = expired ? findFactionByName(submittedId) : null
   const factionMatch = expired && !factionNameMatch ? findFaction(submittedId) : null
 
@@ -331,6 +334,52 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
               <div className="p-1">
                 <video
                   src={`${import.meta.env.BASE_URL}gecko_habitat.mp4`}
+                  controls
+                  autoPlay
+                  className="w-full"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+
+    {createPortal(
+      <AnimatePresence>
+        {showKangalVideo && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-sm p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            onClick={() => setShowKangalVideo(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-lg border-2 border-orange-500/70 bg-black font-terminal"
+              initial={{ scale: 0.92, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 16 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-orange-500/40 px-5 py-3">
+                <div>
+                  <p className="text-sm tracking-wider text-orange-300 font-bold uppercase">Ton edit</p>
+                  <p className="text-xs text-orange-600 tracking-widest mt-0.5">Transmission déclassifiée</p>
+                </div>
+                <button
+                  onClick={() => setShowKangalVideo(false)}
+                  className="text-orange-600 hover:text-orange-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-1">
+                <video
+                  src={`${import.meta.env.BASE_URL}kangal_edit.mp4`}
                   controls
                   autoPlay
                   className="w-full"
@@ -735,6 +784,36 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                   >
                     {countdownStr}
                   </motion.p>
+                </>
+              ) : isKangal ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    [DONNÉES CORROMPUES DUES À UNE VIOLATION DE L'ARTICLE {d2} DE SÉCURITÉ]
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                  <div className="border-t border-orange-500/20 pt-3 mt-1 space-y-2">
+                    <p className="text-xs text-orange-300 leading-relaxed">
+                      En attendant pour te faire patienter, profite de ton edit.
+                    </p>
+                    <button
+                      onClick={() => setShowKangalVideo(true)}
+                      className="w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                    >
+                      Découvrir l'edit
+                    </button>
+                  </div>
                 </>
               ) : isAshera ? (
                 <>
