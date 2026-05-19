@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Terminal, Loader2, Mail, ShieldCheck } from 'lucide-react'
 import { AdminDashboard } from './AdminDashboard'
+import { useAdminCode } from '../../hooks/useAdminCode'
 
 type AuthStep = 'code1' | 'select' | 'sending' | 'code2' | 'verifying' | 'dashboard'
 
@@ -10,9 +11,9 @@ const FN_BASE = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
 const MASKED_EMAILS = ['mo████@gmail.com', 'ma████@gmail.com', 'sl████@gmail.com']
-const FIRST_CODE = '292929'
 
 export function AdminTerminal({ onClose }: { onClose: () => void }) {
+  const adminCode = useAdminCode()
   const [step, setStep] = useState<AuthStep>('code1')
   const [code1, setCode1] = useState('')
   const [emailIndex, setEmailIndex] = useState<number | null>(null)
@@ -20,8 +21,8 @@ export function AdminTerminal({ onClose }: { onClose: () => void }) {
   const [errorMsg, setErrorMsg] = useState('')
 
   const handleCode1 = () => {
-    if (!code1.trim()) return
-    if (code1 !== FIRST_CODE) {
+    if (code1.length !== 4) return
+    if (!adminCode || code1 !== adminCode) {
       setErrorMsg('Code invalide')
       setCode1('')
       return
@@ -173,10 +174,12 @@ export function AdminTerminal({ onClose }: { onClose: () => void }) {
                 </label>
                 <input
                   type="password"
+                  inputMode="numeric"
+                  maxLength={4}
                   value={code1}
-                  onChange={e => { setCode1(e.target.value); setErrorMsg('') }}
-                  onKeyDown={e => e.key === 'Enter' && code1.length > 0 && handleCode1()}
-                  placeholder="——————"
+                  onChange={e => { setCode1(e.target.value.replace(/\D/g, '').slice(0, 4)); setErrorMsg('') }}
+                  onKeyDown={e => e.key === 'Enter' && code1.length === 4 && handleCode1()}
+                  placeholder="————"
                   autoFocus
                   className="w-full border border-orange-500/40 bg-black px-4 py-3 text-sm text-orange-100 placeholder-orange-800 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/40 transition-all text-center tracking-[0.4em]"
                 />
@@ -192,7 +195,7 @@ export function AdminTerminal({ onClose }: { onClose: () => void }) {
               )}
               <button
                 onClick={handleCode1}
-                disabled={!code1.trim()}
+                disabled={code1.length !== 4}
                 className="w-full border border-orange-500/60 bg-orange-500/10 px-4 py-3 text-xs tracking-[0.3em] text-orange-300 uppercase hover:bg-orange-500/20 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Valider

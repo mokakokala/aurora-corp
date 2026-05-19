@@ -7,6 +7,7 @@ import { useWavesurfer } from '@wavesurfer/react'
 import { FrequencyMiniGame } from './FrequencyMiniGame'
 import { supabase } from '../../lib/supabase'
 import { AUDIO_UNLOCK_TABLE } from '../../config/constants'
+import { useAdminCode } from '../../hooks/useAdminCode'
 
 function formatTime(s: number): string {
   if (!isFinite(s)) return '00:00'
@@ -21,6 +22,8 @@ const VU_METER_CONFIG = Array.from({ length: 20 }, () => ({
 }))
 
 export function AudioLogModule() {
+  const adminCode = useAdminCode()
+  const d3 = adminCode?.[2] ?? '?'
   const containerRef = useRef<HTMLDivElement>(null)
   const [isReady, setIsReady] = useState(false)
   const [showMiniGame, setShowMiniGame] = useState(false)
@@ -168,7 +171,7 @@ export function AudioLogModule() {
         </div>
 
         <p className="text-center text-xs text-orange-500 font-terminal tracking-widest">
-          Tentative de récupération n°9
+          Tentative de récupération n°{d3}
         </p>
 
         <p className="text-center text-xs text-orange-600 font-terminal tracking-widest">

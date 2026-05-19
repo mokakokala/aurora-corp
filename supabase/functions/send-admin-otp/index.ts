@@ -1,7 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const FIRST_CODE = '292929'
 const AUTHORIZED_EMAILS = ['mokakokala@gmail.com', 'matthieub117@gmail.com', 'slgdawans@gmail.com']
 const OTP_EXPIRY_MINUTES = 15
 
@@ -13,7 +12,18 @@ Deno.serve(async (req) => {
   try {
     const { firstCode, emailIndex } = await req.json()
 
-    if (firstCode !== FIRST_CODE) {
+    const supabaseForConfig = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+    const { data: configData } = await supabaseForConfig
+      .from('admin_config')
+      .select('value')
+      .eq('key', 'first_code')
+      .single()
+    const currentCode = configData?.value
+
+    if (!currentCode || firstCode !== currentCode) {
       return new Response(
         JSON.stringify({ success: false, error: 'Code invalide' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

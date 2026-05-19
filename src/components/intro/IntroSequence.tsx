@@ -8,7 +8,7 @@ const ORANGE_FILTER = 'brightness(0) saturate(100%) invert(62%) sepia(90%) satur
 
 const BULLET_ITEMS_1 = [
   ['Un compte à rebours', "une fois terminé, il dévoilera bien plus d'informations dans tout le système…"],
-  ['Un document classifié', "qui, à l'aide d'un certain code, serait peut-être disponible bien avant le compte à rebours — à vous de fouiller…"],
+  ['Un document classifié', "qui, à l'aide d'un certain code, serait peut-être disponible bien avant le compte à rebours — à vous de fouiller… Attention, ce code se renouvelle régulièrement."],
   ["L'organigramme de la firme", "il existe un moyen d'intercepter les dossiers confidentiels et de voir les noms et l'organigramme des membres de l'A.U.R.O.R.A CORP."],
   ['Une véritable récompense physique', "une des brèches dans le système vous permet de décrocher une récompense qui va vraiment vous mettre fort dans le bueno pendant le camp (réservé aux 5 premiers à trouver)."],
   ['Une apparition mystère', "les rumeurs disent qu'il est possible d'apercevoir le rappeur préféré d'Obi-Wan Kenobi quelque part dans le système..."],

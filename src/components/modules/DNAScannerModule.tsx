@@ -5,6 +5,7 @@ import { Dna, Search, RotateCcw, X } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
 import { TARGET_DATE, DNA_SCAN_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
+import { useAdminCode } from '../../hooks/useAdminCode'
 
 type Step = 'idle' | 'scanning' | 'result'
 
@@ -86,6 +87,8 @@ function findFaction(id: string): { memberName: string; faction: string } | null
 }
 
 export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: () => void }) {
+  const adminCode = useAdminCode()
+  const d2 = adminCode?.[1] ?? '?'
   const [step, setStep] = useState<Step>('idle')
   const [input, setInput] = useState('')
   const [submittedId, setSubmittedId] = useState('')
@@ -642,7 +645,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                     Analyse en cours... Résultat détecté :
                   </p>
                   <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
-                    [DONNÉES CORROMPUES DUES À UNE VIOLATION DE L'ARTICLE 4 DE SÉCURITÉ]
+                    [DONNÉES CORROMPUES DUES À UNE VIOLATION DE L'ARTICLE {d2} DE SÉCURITÉ]
                   </p>
                   {isGecko && (
                     <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createNoise2D } from 'simplex-noise'
 import { MapPin, X } from 'lucide-react'
 import { GPS_COORDINATES, GROUP_LABELS } from '../../config/constants'
+import { useAdminCode } from '../../hooks/useAdminCode'
 
 interface Tooltip {
   index: number
@@ -16,6 +17,9 @@ const MARKER_ANGLES = [0.3, 1.1, 1.9, 2.8, 3.6, 4.4, 5.2]
 const TOOLTIP_W = 230
 
 export function RadarMapModule() {
+  const adminCode = useAdminCode()
+  const d1 = adminCode?.[0] ?? '?'
+  const d4 = adminCode?.[3] ?? '?'
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animFrameRef = useRef<number>(0)
   const sweepAngleRef = useRef(0)
@@ -238,7 +242,7 @@ export function RadarMapModule() {
                 <div className="px-4 py-3 flex items-start justify-between gap-3">
                   <div>
                     <p className="text-xs text-red-400 tracking-widest uppercase font-bold leading-relaxed">
-                      A.U.R.O.R.A localisée<br />dans le Secteur 7
+                      A.U.R.O.R.A localisée<br />dans le Secteur {d1}
                     </p>
                   </div>
                   <button onClick={() => setWreckTooltip(false)} className="text-red-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5">
@@ -263,7 +267,7 @@ export function RadarMapModule() {
             >
               <div className="px-4 py-3 flex items-start justify-between gap-3">
                 <p className="text-xs text-red-400 tracking-wide leading-relaxed">
-                  T'as bien fouillé, le dernier chiffre du code est 2.
+                  T'as bien fouillé, le dernier chiffre du code est {d4}.
                 </p>
                 <button onClick={() => setSecretVisible(false)} className="text-red-600 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5">
                   <X className="h-3 w-3" />
