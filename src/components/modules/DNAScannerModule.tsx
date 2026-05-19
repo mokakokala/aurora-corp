@@ -95,6 +95,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const [showColettePopup, setShowColettePopup] = useState(false)
   const [showFactionPanel, setShowFactionPanel] = useState(false)
   const [showZoneModal, setShowZoneModal] = useState(false)
+  const [showAsheraVideo, setShowAsheraVideo] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -127,6 +128,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setShowColettePopup(false)
     setShowFactionPanel(false)
     setShowZoneModal(false)
+    setShowAsheraVideo(false)
   }
 
   const n = normalizeName(submittedId)
@@ -238,6 +240,52 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                   src={`${import.meta.env.BASE_URL}zone_mysterieuse.jpg`}
                   alt="Zone mystérieuse"
                   className="w-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+
+    {createPortal(
+      <AnimatePresence>
+        {showAsheraVideo && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-sm p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            onClick={() => setShowAsheraVideo(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-lg border-2 border-orange-500/70 bg-black font-terminal"
+              initial={{ scale: 0.92, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 16 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-orange-500/40 px-5 py-3">
+                <div>
+                  <p className="text-sm tracking-wider text-orange-300 font-bold uppercase">Ton edit</p>
+                  <p className="text-xs text-orange-600 tracking-widest mt-0.5">Transmission déclassifiée</p>
+                </div>
+                <button
+                  onClick={() => setShowAsheraVideo(false)}
+                  className="text-orange-600 hover:text-orange-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-1">
+                <video
+                  src={`${import.meta.env.BASE_URL}ashera_edit.mp4`}
+                  controls
+                  autoPlay
+                  className="w-full"
                 />
               </div>
             </motion.div>
@@ -663,7 +711,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                       En attendant pour te faire patienter, profite de ton edit.
                     </p>
                     <button
-                      onClick={() => window.open(`${import.meta.env.BASE_URL}ashera_edit.mp4`, '_blank')}
+                      onClick={() => setShowAsheraVideo(true)}
                       className="w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
                     >
                       Découvrir l'edit
