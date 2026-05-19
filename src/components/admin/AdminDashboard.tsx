@@ -306,6 +306,8 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true)
   const [granularity, setGranularity] = useState<Granularity>('day')
   const [activeTab, setActiveTab] = useState(0)
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 50
 
   const [scouts, setScouts] = useState<ScoutLogin[]>([])
   const [overrides, setOverrides] = useState<OverrideLog[]>([])
@@ -362,61 +364,34 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
   // Table tabs
   const TABS = ['Scouts', 'Scans ADN', 'Overrides', 'Punitions', 'Konami', 'Tentatives', 'Audio']
 
-  const renderTable = (tab: number) => {
+  const allRows = (tab: number): (string | number | null)[][] => {
     switch (tab) {
-      case 0:
-        return <RawTable
-          columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date']}
-          rows={scouts.slice(0, 50).map(s => [
-            s.prenom_totem, s.age, s.city, s.ip, fmtBrussels(s.created_at)
-          ])}
-        />
-      case 1:
-        return <RawTable
-          columns={['Scanné', 'Enregistré sous', 'Ville', 'IP', 'Date']}
-          rows={dnaScans.slice(0, 50).map(d => [
-            d.scanned_id, d.logged_as, d.city, d.ip, fmtBrussels(d.created_at)
-          ])}
-        />
-      case 2:
-        return <RawTable
-          columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date Override']}
-          rows={overrides.map(o => [
-            o.prenom_totem, o.age, o.city, o.ip, fmtBrussels(o.override_at)
-          ])}
-        />
-      case 3:
-        return <RawTable
-          columns={['Prénom/Totem', 'Punition #', 'Bypassé', 'Note', 'Commentaire', 'Date']}
-          rows={punishments.map(p => [
-            p.prenom_totem, p.punishment_number,
-            p.bypassed ? 'Oui' : 'Non',
-            p.rating ?? null, p.comment,
-            fmtBrussels(p.punished_at)
-          ])}
-        />
-      case 4:
-        return <RawTable
-          columns={['Totem/Prénom', 'Ville', 'IP', 'Date']}
-          rows={konamiLogs.map(k => [
-            k.totem, k.city, k.ip, fmtBrussels(k.created_at)
-          ])}
-        />
-      case 5:
-        return <RawTable
-          columns={['Prénom/Totem', 'Âge', 'Code tenté', 'Ville', 'IP', 'Date']}
-          rows={failedLogs.map(f => [
-            f.prenom_totem, f.age, f.code_tried, f.city, f.ip, fmtBrussels(f.failed_at)
-          ])}
-        />
-      case 6:
-        return <RawTable
-          columns={['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date débloqué']}
-          rows={audioUnlocks.map(a => [
-            a.prenom_totem, a.age, a.city, a.ip, fmtBrussels(a.unlocked_at)
-          ])}
-        />
+      case 0: return scouts.map(s => [s.prenom_totem, s.age, s.city, s.ip, fmtBrussels(s.created_at)])
+      case 1: return dnaScans.map(d => [d.scanned_id, d.logged_as, d.city, d.ip, fmtBrussels(d.created_at)])
+      case 2: return overrides.map(o => [o.prenom_totem, o.age, o.city, o.ip, fmtBrussels(o.override_at)])
+      case 3: return punishments.map(p => [p.prenom_totem, p.punishment_number, p.bypassed ? 'Oui' : 'Non', p.rating ?? null, p.comment, fmtBrussels(p.punished_at)])
+      case 4: return konamiLogs.map(k => [k.totem, k.city, k.ip, fmtBrussels(k.created_at)])
+      case 5: return failedLogs.map(f => [f.prenom_totem, f.age, f.code_tried, f.city, f.ip, fmtBrussels(f.failed_at)])
+      case 6: return audioUnlocks.map(a => [a.prenom_totem, a.age, a.city, a.ip, fmtBrussels(a.unlocked_at)])
+      default: return []
     }
+  }
+
+  const TAB_COLUMNS = [
+    ['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date'],
+    ['Scanné', 'Enregistré sous', 'Ville', 'IP', 'Date'],
+    ['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date Override'],
+    ['Prénom/Totem', 'Punition #', 'Bypassé', 'Note', 'Commentaire', 'Date'],
+    ['Totem/Prénom', 'Ville', 'IP', 'Date'],
+    ['Prénom/Totem', 'Âge', 'Code tenté', 'Ville', 'IP', 'Date'],
+    ['Prénom/Totem', 'Âge', 'Ville', 'IP', 'Date débloqué'],
+  ]
+
+  const renderTable = (tab: number) => {
+    const rows = allRows(tab)
+    const start = page * PAGE_SIZE
+    const pageRows = rows.slice(start, start + PAGE_SIZE)
+    return <RawTable columns={TAB_COLUMNS[tab]} rows={pageRows} />
   }
 
   return createPortal(
@@ -709,7 +684,7 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
                 {TABS.map((tab, i) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(i)}
+                    onClick={() => { setActiveTab(i); setPage(0) }}
                     className={`px-3 py-1.5 text-xs tracking-[0.2em] uppercase border transition-all ${
                       activeTab === i
                         ? 'border-orange-500 bg-orange-500/15 text-orange-300'
@@ -729,9 +704,40 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
               >
                 {renderTable(activeTab)}
               </motion.div>
-              <p className="text-xs text-orange-800 tracking-wider text-right mt-1">
-                {[scouts.length, dnaScans.length, overrides.length, punishments.length, konamiLogs.length, failedLogs.length, audioUnlocks.length][activeTab]} entrée(s) — 50 max affichées
-              </p>
+              {(() => {
+                const total = allRows(activeTab).length
+                const totalPages = Math.ceil(total / PAGE_SIZE)
+                const start = page * PAGE_SIZE + 1
+                const end = Math.min((page + 1) * PAGE_SIZE, total)
+                return (
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-orange-800 tracking-wider">
+                      {total === 0 ? '0 entrée' : `${start}–${end} sur ${total} entrée${total > 1 ? 's' : ''}`}
+                    </p>
+                    {totalPages > 1 && (
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => setPage(p => Math.max(0, p - 1))}
+                          disabled={page === 0}
+                          className="px-2 py-1 text-xs border border-orange-500/30 text-orange-600 hover:border-orange-500/60 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          ← Préc.
+                        </button>
+                        <span className="px-2 py-1 text-xs text-orange-700">
+                          {page + 1} / {totalPages}
+                        </span>
+                        <button
+                          onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                          disabled={page >= totalPages - 1}
+                          className="px-2 py-1 text-xs border border-orange-500/30 text-orange-600 hover:border-orange-500/60 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                          Suiv. →
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </Section>
           </>
         )}
