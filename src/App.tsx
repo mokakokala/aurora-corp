@@ -3,14 +3,22 @@ import { AnimatePresence } from 'framer-motion'
 import { GlitchWrapper } from './components/ui/GlitchWrapper'
 import { IntroSequence } from './components/intro/IntroSequence'
 import { IdentificationPortal } from './components/portal/IdentificationPortal'
+import { ServalGate } from './components/portal/ServalGate'
 import { Dashboard } from './components/layout/Dashboard'
 import { MembersPage } from './components/pages/MembersPage'
 import { KonamiOverlay } from './components/modules/KonamiOverlay'
 import { useKonamiCode } from './hooks/useKonamiCode'
 import { useAdminCode } from './hooks/useAdminCode'
 
+const SERVAL_AUDIO = 'serval.mp3'
+
+function isServal(name: string) {
+  return name.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '') === 'serval'
+}
+
 export default function App() {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('aurora_auth') === '1')
+  const [servalGate, setServalGate] = useState(false)
   const adminCode = useAdminCode()
 
   useEffect(() => {
@@ -35,8 +43,29 @@ export default function App() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {introComplete && !authenticated && (
-          <IdentificationPortal onSuccess={() => { sessionStorage.setItem('aurora_auth', '1'); setAuthenticated(true) }} />
+        {introComplete && !authenticated && !servalGate && (
+          <IdentificationPortal onSuccess={() => {
+            const raw = sessionStorage.getItem('aurora_identity')
+            const identity = raw ? JSON.parse(raw) : null
+            if (identity?.prenom_totem && isServal(identity.prenom_totem)) {
+              setServalGate(true)
+            } else {
+              sessionStorage.setItem('aurora_auth', '1')
+              setAuthenticated(true)
+            }
+          }} />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {servalGate && !authenticated && (
+          <ServalGate
+            audioFile={SERVAL_AUDIO}
+            onComplete={() => {
+              sessionStorage.setItem('aurora_auth', '1')
+              setServalGate(false)
+              setAuthenticated(true)
+            }}
+          />
         )}
       </AnimatePresence>
       <AnimatePresence mode="wait">
