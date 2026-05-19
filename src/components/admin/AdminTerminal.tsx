@@ -179,7 +179,7 @@ export function AdminTerminal({ onClose }: { onClose: () => void }) {
                   value={code1}
                   onChange={e => { setCode1(e.target.value.replace(/\D/g, '').slice(0, 6)); setErrorMsg('') }}
                   onKeyDown={e => e.key === 'Enter' && code1.length === 6 && handleCode1()}
-                  placeholder="————"
+                  placeholder="——————"
                   autoFocus
                   className="w-full border border-orange-500/40 bg-black px-4 py-3 text-sm text-orange-100 placeholder-orange-800 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/40 transition-all text-center tracking-[0.4em]"
                 />
