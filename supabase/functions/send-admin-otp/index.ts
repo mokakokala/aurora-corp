@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const { data: configData } = await supabaseForConfig
       .from('admin_config')
       .select('value')
-      .eq('key', 'first_code')
+      .eq('key', 'dashboard_code')
       .single()
     const currentCode = configData?.value
 

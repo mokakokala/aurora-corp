@@ -143,6 +143,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const isGecko = n === 'gecko'
   const isCoords = /44[.,]?5170*\d*°?\s*N\s+15[.,]?5313*\d*°?\s*E/i.test(submittedId)
 
+  const isAshera = !expired && /ashera/i.test(submittedId)
   const factionNameMatch = expired ? findFactionByName(submittedId) : null
   const factionMatch = expired && !factionNameMatch ? findFaction(submittedId) : null
 
@@ -638,6 +639,36 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                   >
                     {countdownStr}
                   </motion.p>
+                </>
+              ) : isAshera ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-red-400 tracking-wider font-bold leading-relaxed">
+                    [DONNÉES CORROMPUES DUES À UNE VIOLATION DE L'ARTICLE {d2} DE SÉCURITÉ]
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Veuillez patienter jusqu'à la restauration système dans :
+                  </p>
+                  <motion.p
+                    className="text-lg text-orange-400 font-terminal tracking-widest"
+                    animate={{ opacity: [1, 0.6, 1] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+                  >
+                    {countdownStr}
+                  </motion.p>
+                  <div className="border-t border-orange-500/20 pt-3 mt-1 space-y-2">
+                    <p className="text-xs text-orange-300 leading-relaxed">
+                      En attendant pour te faire patienter, profite de ton edit.
+                    </p>
+                    <button
+                      onClick={() => window.open(`${import.meta.env.BASE_URL}ashera_edit.mp4`, '_blank')}
+                      className="w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                    >
+                      Découvrir l'edit
+                    </button>
+                  </div>
                 </>
               ) : (
                 <>
