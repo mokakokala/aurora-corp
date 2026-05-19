@@ -5,8 +5,7 @@ import { useCountdown } from '../../hooks/useCountdown'
 import { TARGET_DATE, OVERRIDE_LOG_TABLE, FAILED_OVERRIDE_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
 import { PunishmentModal } from './PunishmentModal'
-
-const OVERRIDE_CODE = '7492'
+import { useAdminCode } from '../../hooks/useAdminCode'
 const WEAK_CODES = new Set(['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999','1234','2929','2933','2026','2626','2525'])
 
 function DigitBox({ value, label }: { value: number; label: string }) {
@@ -31,6 +30,7 @@ function DigitBox({ value, label }: { value: number; label: string }) {
 }
 
 export function CountdownModule() {
+  const adminCode = useAdminCode()
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const [blockedClicks, setBlockedClicks] = useState(0)
   const [showWarning, setShowWarning] = useState(false)
@@ -62,7 +62,7 @@ export function CountdownModule() {
   }
 
   const handleOverride = () => {
-    if (overrideCode === OVERRIDE_CODE) {
+    if (adminCode && overrideCode === adminCode) {
       setOverrideStatus('accepted')
 
       const raw = sessionStorage.getItem('aurora_identity')
