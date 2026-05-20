@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { usePresence } from '../../hooks/usePresence'
 import { useTabTitle } from '../../hooks/useTabTitle'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Timer, Map, Search, Radio, LogOut, Trophy, Gift } from 'lucide-react'
+import { Timer, Map, Search, Radio, LogOut, Trophy, Gift, BookOpen } from 'lucide-react'
 import { TARGET_DATE } from '../../config/constants'
 import { useCountdown } from '../../hooks/useCountdown'
 import { CountdownModule } from '../modules/CountdownModule'
@@ -11,6 +11,7 @@ import { DNAScannerModule } from '../modules/DNAScannerModule'
 import { AudioLogModule } from '../modules/AudioLogModule'
 import { AdminTerminal } from '../admin/AdminTerminal'
 import { TermsModal } from '../ui/TermsModal'
+import { RulesModal } from '../ui/RulesModal'
 import { supabase } from '../../lib/supabase'
 
 const TABS = [
@@ -38,7 +39,7 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
 }
 
-export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards }: { onDiscoverMembers: () => void; onShowLeaderboard: () => void; onShowRewards: () => void }) {
+export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards }: { onDiscoverMembers: () => void; onShowLeaderboard: () => void; onShowRewards: () => void; }) {
   const [activeTab, setActiveTab] = useState<TabId>('countdown')
   const [direction, setDirection] = useState(1)
   const activeCount = usePresence()
@@ -47,6 +48,7 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
   const [adminClicks, setAdminClicks] = useState(0)
   const [adminOpen, setAdminOpen] = useState(false)
   const [showTerms, setShowTerms] = useState(false)
+  const [showRules, setShowRules] = useState(false)
 
   const identity = JSON.parse(sessionStorage.getItem('aurora_identity') ?? '{}')
   const username: string = identity.prenom_totem ?? ''
@@ -91,6 +93,7 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
     <>
     {adminOpen && <AdminTerminal onClose={() => setAdminOpen(false)} />}
     <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
+    <RulesModal open={showRules} onClose={() => setShowRules(false)} />
 
     {/* Easter egg 13 — overlay jour J */}
     <AnimatePresence>
@@ -183,6 +186,14 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
             </AnimatePresence>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowRules(true)}
+              className="flex items-center gap-1.5 text-xs tracking-widest text-orange-600 hover:text-orange-400 transition-colors uppercase"
+              title="Règles"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Règles</span>
+            </button>
             <button
               onClick={onShowRewards}
               className="flex items-center gap-1.5 text-xs tracking-widest text-orange-600 hover:text-orange-400 transition-colors uppercase"
