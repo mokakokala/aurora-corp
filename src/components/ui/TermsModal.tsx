@@ -90,7 +90,17 @@ export function TermsModal({ open, onClose }: { open: boolean; onClose: () => vo
               </section>
 
               <section className="space-y-2.5">
-                <p className="text-orange-500 uppercase tracking-widest font-bold">Article 6 — Droit applicable et juridiction</p>
+                <p className="text-orange-500 uppercase tracking-widest font-bold">Article 6 — Règle stricte sur le partage d'informations</p>
+                <p>Le partage des solutions, des astuces ou de l'emplacement des failles entre joueurs est strictement interdit. Pour garantir un jeu équitable, la règle suivante s'applique :</p>
+                <ul className="space-y-1.5 pl-4 list-none">
+                  <li><span className="text-orange-500">*</span> <span className="text-orange-500 font-bold">Sanction commune :</span> Le joueur soupçonné d'avoir partagé l'information ET le joueur soupçonné d'en avoir profité seront tous les deux pénalisés.</li>
+                  <li><span className="text-orange-500">*</span> <span className="text-orange-500 font-bold">Montant de la pénalité :</span> Le nombre de points retirés à chacun sera équivalent à la valeur exacte de la (ou des) faille(s) partagée(s).</li>
+                  <li><span className="text-orange-500">*</span> <span className="text-orange-500 font-bold">Décision du staff :</span> Les chefs se réservent le droit de retirer ces points sur de simples soupçons. Les chefs n'ont aucune obligation de fournir des preuves matérielles pour appliquer la sanction, et la décision est définitive.</li>
+                </ul>
+              </section>
+
+              <section className="space-y-2.5">
+                <p className="text-orange-500 uppercase tracking-widest font-bold">Article 7 — Droit applicable et juridiction</p>
                 <p>Les présentes CGU sont régies par le droit interne de la Corporation Aurora, lequel prévaut sur tout autre corpus juridique dans la zone d'opérations. Tout litige sera soumis à la compétence exclusive du Tribunal de la Zone Classifiée, dont le siège est fixé à la position GPS [DONNÉES CLASSIFIÉES]. Les parties renoncent expressément à tout autre mode de règlement des différends, y compris l'arbitrage international et les juridictions civiles de droit commun.</p>
                 <p>En cas de contradiction entre les présentes CGU et toute disposition d'un traité international, accord bilatéral ou réglementation nationale, les présentes CGU prévaudront dans la stricte mesure permise par la loi applicable au siège de la Corporation. La nullité d'une clause n'emporte pas la nullité des autres dispositions.</p>
               </section>
