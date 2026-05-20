@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Dna, Search, RotateCcw, X } from 'lucide-react'
+import { Search, RotateCcw, X } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
-import { TARGET_DATE, DNA_SCAN_TABLE } from '../../config/constants'
+import { TARGET_DATE, DNA_SCAN_TABLE, EASTER_EGG_VIEWS_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
+import { discoverEasterEgg } from '../../lib/discoverEasterEgg'
 import { useAdminCode } from '../../hooks/useAdminCode'
+import { PeaceSignModal } from '../ui/PeaceSignModal'
 
 type Step = 'idle' | 'scanning' | 'result'
 
@@ -86,6 +88,17 @@ function findFaction(id: string): { memberName: string; faction: string } | null
   return null
 }
 
+function logEasterEggView(slug: string) {
+  const raw = sessionStorage.getItem('aurora_identity')
+  const identity = raw ? JSON.parse(raw) as { prenom_totem: string; ip?: string; city?: string } : null
+  supabase.from(EASTER_EGG_VIEWS_TABLE).insert([{
+    easter_egg: slug,
+    prenom_totem: identity?.prenom_totem ?? 'inconnu',
+    ip: identity?.ip ?? null,
+    city: identity?.city ?? null,
+  }]).then(({ error }) => { if (error) console.error('easter_egg_views insert:', error) })
+}
+
 export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: () => void }) {
   const adminCode = useAdminCode()
   const d2 = adminCode?.[1] ?? '?'
@@ -98,6 +111,8 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const [showAsheraVideo, setShowAsheraVideo] = useState(false)
   const [showGeckoVideo, setShowGeckoVideo] = useState(false)
   const [showKangalVideo, setShowKangalVideo] = useState(false)
+  const [showPeaceSign, setShowPeaceSign] = useState(false)
+  const [showBickyBurger, setShowBickyBurger] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -111,7 +126,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setStep('scanning')
     timeoutRef.current = setTimeout(() => {
       setStep('result')
-      if (/colette/i.test(scannedId)) setShowColettePopup(true)
+      if (/colette/i.test(scannedId)) { setShowColettePopup(true); logEasterEggView('rappeur_obi_wan'); discoverEasterEgg('rappeur_obi_wan') }
       const raw = sessionStorage.getItem('aurora_identity')
       const identity = raw ? JSON.parse(raw) as { prenom_totem: string; ip?: string; city?: string } : null
       supabase.from(DNA_SCAN_TABLE).insert([{
@@ -133,9 +148,13 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setShowAsheraVideo(false)
     setShowGeckoVideo(false)
     setShowKangalVideo(false)
+    setShowPeaceSign(false)
+    setShowBickyBurger(false)
   }
 
   const n = normalizeName(submittedId)
+  const isVSign = submittedId.trim() === 'V'
+  const isBickyBurger = n === 'bicky burger'
   const isAurora = /^a\.?u\.?r\.?o\.?r\.?a\.?(\s+corp\.?)?$/i.test(submittedId.trim())
   const isColette = n === 'colette'
   const isAndalouse = n === 'andalouse' || n === 'pauwels'
@@ -160,6 +179,54 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
 
   return (
     <>
+    <PeaceSignModal open={showPeaceSign} onClose={() => setShowPeaceSign(false)} />
+
+    {createPortal(
+      <AnimatePresence>
+        {showBickyBurger && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/88 backdrop-blur-sm p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            onClick={() => setShowBickyBurger(false)}
+          >
+            <motion.div
+              className="relative w-full max-w-sm border-2 border-orange-500/70 bg-black font-terminal"
+              initial={{ scale: 0.92, y: 16 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 16 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-orange-500/40 px-5 py-3">
+                <div>
+                  <p className="text-sm tracking-wider text-orange-300 font-bold leading-relaxed">
+                    Félicitations tu viens de découvrir l'état du bus dans lequel on va voyager.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowBickyBurger(false)}
+                  className="text-orange-600 hover:text-orange-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="p-1">
+                <img
+                  src={`${import.meta.env.BASE_URL}bicky_burger.jpg`}
+                  alt="Bicky Burger Gospic"
+                  className="w-full object-cover"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+
     {createPortal(
       <AnimatePresence>
         {showColettePopup && (
@@ -446,11 +513,11 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-orange-500/30 pb-4">
-        <Dna className="h-4 w-4 text-orange-500" />
+        <Search className="h-4 w-4 text-orange-500" />
         <div>
           <p className="text-xs tracking-[0.3em] text-orange-500 uppercase">Module Gamma</p>
           <h2 className="mt-0.5 text-sm tracking-widest text-orange-200 uppercase font-bold">
-            Scanner ADN — Identification
+            Scanner — Identification
           </h2>
         </div>
       </div>
@@ -468,13 +535,13 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
           >
             <div>
               <label className="mb-2 block text-xs tracking-[0.2em] text-orange-400 uppercase">
-                &gt; Identifiant biométrique
+                &gt; Identifiant
               </label>
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Totem, si pas de totem, nom..."
+                placeholder="Entrez une séquence d'identification..."
                 className="w-full border border-orange-500/50 bg-black/60 px-4 py-3 text-sm text-orange-100 placeholder-orange-600 font-terminal outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-500/50 transition-all duration-300"
               />
             </div>
@@ -511,7 +578,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
               <motion.p animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 0.9 }}>
                 &gt; Analyse en cours...
               </motion.p>
-              <p className="text-orange-500">Séquençage ADN : {submittedId.toUpperCase()}</p>
+              <p className="text-orange-500">Séquençage : {submittedId.toUpperCase()}</p>
             </div>
 
             {/* DNA helix dots */}
@@ -548,6 +615,10 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                 ? 'border-orange-400/80 bg-orange-900/15'
                 : factionNameMatch || factionMatch
                 ? 'border-orange-400/80 bg-orange-900/15'
+                : isBickyBurger
+                ? 'border-orange-400/80 bg-orange-900/15'
+                : isVSign
+                ? 'border-orange-400/80 bg-orange-900/15'
                 : 'border-red-500/40 bg-red-900/10'
             }`}>
               <p className="text-xs text-orange-500 tracking-widest">
@@ -562,7 +633,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                     IDENTIFIANT CORPORATIF RECONNU — ACCÈS AUX DOSSIERS CLASSIFIÉS
                   </p>
                   <button
-                    onClick={onDiscoverMembers}
+                    onClick={() => { onDiscoverMembers?.(); logEasterEggView('organigramme_aurora'); discoverEasterEgg('organigramme_aurora') }}
                     className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
                   >
                     Découvrir les membres de la A.U.R.O.R.A. CORP.
@@ -623,7 +694,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                     Analyse en cours... Résultat détecté :
                   </p>
                   <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
-                    IDENTIFICATION CONFIRMÉE — ANALYSE ADN COMPLÈTE
+                    IDENTIFICATION CONFIRMÉE — ANALYSE COMPLÈTE
                   </p>
                   <p className="text-sm text-orange-200 leading-relaxed">
                     <span className="text-orange-400 font-bold">{factionMatch.memberName}</span>{' '}
@@ -646,7 +717,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                     COORDONNÉES RECONNUES — ZONE D'INTÉRÊT CLASSIFIÉE
                   </p>
                   <button
-                    onClick={() => setShowZoneModal(true)}
+                    onClick={() => { setShowZoneModal(true); logEasterEggView('gorilles_croates'); discoverEasterEgg('gorilles_croates') }}
                     className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
                   >
                     Découvrir cette zone mystérieuse.
@@ -844,6 +915,39 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
                       Découvrir l'edit
                     </button>
                   </div>
+                </>
+              ) : isBickyBurger ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    ÉTABLISSEMENT RÉPERTORIÉ — COORDONNÉES DISPONIBLES
+                  </p>
+                  <button
+                    onClick={() => { setShowBickyBurger(true); logEasterEggView('etat_du_bus'); discoverEasterEgg('etat_du_bus') }}
+                    className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                  >
+                    Découvrir où se trouve mon bicky burger
+                  </button>
+                </>
+              ) : isVSign ? (
+                <>
+                  <p className="text-xs text-orange-300 leading-relaxed">
+                    Analyse en cours... Résultat détecté :
+                  </p>
+                  <p className="text-sm text-orange-300 tracking-wider font-bold leading-relaxed">
+                    SIGNATURE BIOMÉTRIQUE NON CONVENTIONNELLE — VÉRIFICATION GESTUELLE REQUISE
+                  </p>
+                  <p className="text-xs text-orange-400 leading-relaxed">
+                    Une confirmation visuelle est nécessaire pour valider cette séquence.
+                  </p>
+                  <button
+                    onClick={() => setShowPeaceSign(true)}
+                    className="mt-1 w-full border border-orange-400/70 bg-orange-500/15 px-5 py-3 text-xs tracking-[0.25em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-300"
+                  >
+                    Lancer la vérification palmaire
+                  </button>
                 </>
               ) : (
                 <>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { usePresence } from '../../hooks/usePresence'
 import { useTabTitle } from '../../hooks/useTabTitle'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Timer, Map, Dna, Radio } from 'lucide-react'
+import { Timer, Map, Search, Radio, LogOut, Trophy, Gift } from 'lucide-react'
 import { TARGET_DATE } from '../../config/constants'
 import { useCountdown } from '../../hooks/useCountdown'
 import { CountdownModule } from '../modules/CountdownModule'
@@ -10,11 +10,13 @@ import { RadarMapModule } from '../modules/RadarMapModule'
 import { DNAScannerModule } from '../modules/DNAScannerModule'
 import { AudioLogModule } from '../modules/AudioLogModule'
 import { AdminTerminal } from '../admin/AdminTerminal'
+import { TermsModal } from '../ui/TermsModal'
+import { supabase } from '../../lib/supabase'
 
 const TABS = [
   { id: 'countdown', label: 'Compte à Rebours', short: 'Compte', icon: Timer, component: CountdownModule },
   { id: 'radar', label: 'Carte Radar', short: 'Radar', icon: Map, component: RadarMapModule },
-  { id: 'dna', label: 'Scanner ADN', short: 'Scanner', icon: Dna, component: DNAScannerModule },
+  { id: 'dna', label: 'Scan', short: 'Scan', icon: Search, component: DNAScannerModule },
   { id: 'audio', label: 'Audio Log', short: 'Audio', icon: Radio, component: AudioLogModule },
 ] as const
 
@@ -36,7 +38,7 @@ const slideVariants = {
   exit: (dir: number) => ({ x: dir > 0 ? -40 : 40, opacity: 0 }),
 }
 
-export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void }) {
+export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards }: { onDiscoverMembers: () => void; onShowLeaderboard: () => void; onShowRewards: () => void }) {
   const [activeTab, setActiveTab] = useState<TabId>('countdown')
   const [direction, setDirection] = useState(1)
   const activeCount = usePresence()
@@ -44,6 +46,10 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
 
   const [adminClicks, setAdminClicks] = useState(0)
   const [adminOpen, setAdminOpen] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
+
+  const identity = JSON.parse(sessionStorage.getItem('aurora_identity') ?? '{}')
+  const username: string = identity.prenom_totem ?? ''
 
   // Easter egg 7 — corruption du titre au clic sur le point
   const [dotClicks, setDotClicks] = useState(0)
@@ -84,6 +90,7 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
   return (
     <>
     {adminOpen && <AdminTerminal onClose={() => setAdminOpen(false)} />}
+    <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
 
     {/* Easter egg 13 — overlay jour J */}
     <AnimatePresence>
@@ -175,19 +182,42 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
               </motion.span>
             </AnimatePresence>
           </div>
-          <span
-            className="text-xs text-orange-500 tracking-widest hidden sm:block cursor-default select-none"
-            onClick={() => {
-              const next = adminClicks + 1
-              setAdminClicks(next)
-              if (next >= 5) {
-                setAdminOpen(true)
-                setAdminClicks(0)
-              }
-            }}
-          >
-            TERMINAL ACTIF — CONNEXION SÉCURISÉE
-          </span>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onShowRewards}
+              className="flex items-center gap-1.5 text-xs tracking-widest text-orange-600 hover:text-orange-400 transition-colors uppercase"
+              title="Récompenses"
+            >
+              <Gift className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Récompenses</span>
+            </button>
+            <button
+              onClick={onShowLeaderboard}
+              className="flex items-center gap-1.5 text-xs tracking-widest text-orange-600 hover:text-orange-400 transition-colors uppercase"
+              title="Classement"
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Classement</span>
+            </button>
+            {username && (
+              <span className="text-xs text-orange-600 tracking-widest hidden sm:block">
+                {username.toUpperCase()}
+              </span>
+            )}
+            <span
+              className="text-xs text-orange-500 tracking-widest hidden sm:block cursor-default select-none"
+              onClick={() => {
+                const next = adminClicks + 1
+                setAdminClicks(next)
+                if (next >= 5) {
+                  setAdminOpen(true)
+                  setAdminClicks(0)
+                }
+              }}
+            >
+              TERMINAL ACTIF — CONNEXION SÉCURISÉE
+            </span>
+          </div>
         </div>
       </motion.header>
 
@@ -249,6 +279,31 @@ export function Dashboard({ onDiscoverMembers }: { onDiscoverMembers: () => void
           </span>{' '}
           {activeCount > 1 ? 'terminaux' : 'terminal'} actuellement actif{activeCount > 1 ? 's' : ''}
         </p>
+        <p className="text-xs text-orange-800 tracking-widest">
+          <button
+            onClick={() => setShowTerms(true)}
+            className="hover:text-orange-700 transition-colors cursor-pointer"
+          >
+            termes et conditions
+          </button>
+        </p>
+        <p className="text-xs text-[#080808] tracking-widest">
+          Fast Food No-No Gospic
+        </p>
+        {username && (
+          <div className="flex items-center justify-center gap-3 pt-1">
+            <span className="text-xs text-orange-800 tracking-widest">
+              connecté en tant que <span className="text-orange-600">{username}</span>
+            </span>
+            <button
+              onClick={() => supabase.auth.signOut()}
+              className="flex items-center gap-1 text-xs text-orange-900 hover:text-orange-700 transition-colors tracking-widest uppercase"
+            >
+              <LogOut className="h-2.5 w-2.5" />
+              déconnecter
+            </button>
+          </div>
+        )}
       </footer>
     </div>
     </>

@@ -7,6 +7,7 @@ import { useWavesurfer } from '@wavesurfer/react'
 import { FrequencyMiniGame } from './FrequencyMiniGame'
 import { supabase } from '../../lib/supabase'
 import { AUDIO_UNLOCK_TABLE } from '../../config/constants'
+import { discoverEasterEgg } from '../../lib/discoverEasterEgg'
 import { useAdminCode } from '../../hooks/useAdminCode'
 
 function formatTime(s: number): string {
@@ -71,6 +72,7 @@ export function AudioLogModule() {
       city: identity?.city ?? null,
       unlocked_at: new Date().toISOString(),
     }]).then(({ error }) => { if (error) console.error('Audio unlock log error:', error) })
+    discoverEasterEgg('audio_frequences')
   }
 
   const duration = wavesurfer?.getDuration() ?? 0

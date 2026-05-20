@@ -1,16 +1,86 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { X, Play, Pause } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { KONAMI_TABLE } from '../../config/constants'
+import { discoverEasterEgg } from '../../lib/discoverEasterEgg'
+
+function formatTime(s: number) {
+  if (!isFinite(s)) return '00:00'
+  const m = Math.floor(s / 60)
+  const sec = Math.floor(s % 60)
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+}
+
+function HymnePlayer() {
+  const audioRef = useRef<HTMLAudioElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [current, setCurrent] = useState(0)
+  const [duration, setDuration] = useState(0)
+
+  const toggle = () => {
+    const a = audioRef.current
+    if (!a) return
+    if (playing) { a.pause() } else { a.play() }
+    setPlaying(!playing)
+  }
+
+  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const a = audioRef.current
+    if (!a || !duration) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    a.currentTime = ((e.clientX - rect.left) / rect.width) * duration
+  }
+
+  const progress = duration ? (current / duration) * 100 : 0
+
+  return (
+    <div className="space-y-3">
+      <audio
+        ref={audioRef}
+        src={`${import.meta.env.BASE_URL}hymne_troupe.mp3`}
+        onTimeUpdate={e => setCurrent(e.currentTarget.currentTime)}
+        onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
+        onEnded={() => setPlaying(false)}
+      />
+
+      {/* Progress bar */}
+      <div
+        className="w-full h-1 bg-green-900/50 cursor-pointer relative overflow-hidden"
+        onClick={seek}
+      >
+        <div
+          className="h-full bg-green-500 transition-none"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <div className="flex items-center gap-4">
+        <button
+          onClick={toggle}
+          className="flex items-center justify-center gap-2 border border-green-500/70 bg-green-500/10 px-4 py-2.5 text-xs tracking-[0.3em] text-green-300 uppercase transition-all hover:bg-green-500/20 hover:border-green-400"
+        >
+          {playing
+            ? <Pause className="h-3.5 w-3.5" />
+            : <Play className="h-3.5 w-3.5" />
+          }
+          {playing ? 'Pause' : 'Écouter'}
+        </button>
+
+        <span className="text-xs text-green-700 tracking-widest font-terminal tabular-nums">
+          {formatTime(current)} / {formatTime(duration)}
+        </span>
+      </div>
+    </div>
+  )
+}
 
 function playKonamiSfx() {
   try {
     const ctx = new AudioContext()
     const now = ctx.currentTime
 
-    // Burst de bruit blanc — le "choc" du flash
     const bufSize = Math.floor(ctx.sampleRate * 0.12)
     const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate)
     const data = buf.getChannelData(0)
@@ -25,7 +95,6 @@ function playKonamiSfx() {
     noise.start(now)
     noise.stop(now + 0.13)
 
-    // Séquence ascendante — démarrage système
     const freqs = [200, 300, 450, 600, 900, 1200]
     freqs.forEach((freq, i) => {
       const osc = ctx.createOscillator()
@@ -42,7 +111,6 @@ function playKonamiSfx() {
       osc.stop(t + 0.1)
     })
 
-    // Tonalité finale — système prêt
     const ready = ctx.createOscillator()
     ready.type = 'sine'
     ready.frequency.value = 1200
@@ -60,24 +128,17 @@ function playKonamiSfx() {
 }
 
 export function KonamiOverlay({ onClose }: { onClose: () => void }) {
-  const [totem, setTotem] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-
-  useEffect(() => { playKonamiSfx() }, [])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!totem.trim()) return
+  useEffect(() => {
+    playKonamiSfx()
     const raw = sessionStorage.getItem('aurora_identity')
     const identity = raw ? JSON.parse(raw) as { prenom_totem: string; ip?: string; city?: string } : null
     supabase.from(KONAMI_TABLE).insert([{
-      totem: totem.trim(),
+      totem: identity?.prenom_totem ?? 'inconnu',
       ip: identity?.ip ?? null,
       city: identity?.city ?? null,
     }]).then(({ error }) => { if (error) console.error('konami insert:', error) })
-    setSubmitted(true)
-    setTimeout(onClose, 2500)
-  }
+    discoverEasterEgg('konami_hymne')
+  }, [])
 
   return createPortal(
     <motion.div
@@ -86,7 +147,7 @@ export function KonamiOverlay({ onClose }: { onClose: () => void }) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Flashs verts multiples */}
+      {/* Flash vert */}
       <motion.div
         className="absolute inset-0 bg-green-400"
         initial={{ opacity: 1 }}
@@ -108,7 +169,7 @@ export function KonamiOverlay({ onClose }: { onClose: () => void }) {
         style={{ boxShadow: '0 0 60px rgba(34,197,94,0.25), inset 0 0 40px rgba(34,197,94,0.04)' }}
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.85, duration: 0.5, ease: [0.4, 0, 0.2, 1] as [number,number,number,number] }}
+        transition={{ delay: 0.85, duration: 0.5, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] }}
       >
         <button
           onClick={onClose}
@@ -129,44 +190,13 @@ export function KonamiOverlay({ onClose }: { onClose: () => void }) {
         <div className="h-px bg-green-500/30" />
 
         <p className="text-sm text-green-300 leading-relaxed tracking-wide text-center">
-          Vous êtes trop fort. Contactez un membre de la Aurora Corp, il vous doit un petit apéro pendant le camp !
+          Bravo, tu viens d'accéder à la nouvelle hymne de la troupe.
         </p>
 
-        {!submitted ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs tracking-[0.2em] text-green-500 uppercase mb-2">
-                › Ton totem ou prénom
-              </label>
-              <p className="text-xs text-green-700 tracking-wider mb-3">
-                Laisse ton identité — juste pour qu'on sache qui a réussi le code.
-              </p>
-              <input
-                type="text"
-                value={totem}
-                onChange={e => setTotem(e.target.value)}
-                placeholder="Totem, si pas de totem, prénom..."
-                className="w-full border border-green-500/50 bg-black/60 px-4 py-3 text-sm text-green-100 placeholder-green-900 font-terminal outline-none focus:border-green-400 focus:ring-1 focus:ring-green-500/50 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!totem.trim()}
-              className="w-full border border-green-500/70 bg-green-500/15 px-6 py-3 text-xs tracking-[0.3em] text-green-300 uppercase transition-all hover:bg-green-500/25 hover:border-green-400 disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              Confirmer mon identité
-            </button>
-          </form>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center space-y-2 py-2"
-          >
-            <p className="text-sm text-green-400 tracking-widest uppercase">✓ Identité enregistrée</p>
-            <p className="text-xs text-green-700 tracking-widest">À très bientôt !</p>
-          </motion.div>
-        )}
+        <div className="space-y-2">
+          <p className="text-xs tracking-[0.2em] text-green-600 uppercase">› Hymne officielle</p>
+          <HymnePlayer />
+        </div>
       </motion.div>
     </motion.div>,
     document.body

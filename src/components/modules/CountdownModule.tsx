@@ -4,6 +4,7 @@ import { Lock, Download, Radio, KeyRound } from 'lucide-react'
 import { useCountdown } from '../../hooks/useCountdown'
 import { TARGET_DATE, OVERRIDE_LOG_TABLE, FAILED_OVERRIDE_TABLE } from '../../config/constants'
 import { supabase } from '../../lib/supabase'
+import { discoverEasterEgg } from '../../lib/discoverEasterEgg'
 import { PunishmentModal } from './PunishmentModal'
 import { useAdminCode } from '../../hooks/useAdminCode'
 const WEAK_CODES = new Set(['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999','1234','2929','2933','2026','2626','2525'])
@@ -74,6 +75,7 @@ export function CountdownModule() {
         ip: identity?.ip ?? null,
         city: identity?.city ?? null,
       }]).then(({ error }) => { if (error) console.error('Override log error:', error) })
+      discoverEasterEgg('override_reussi')
 
       setTimeout(() => {
         sessionStorage.setItem('aurora_override', '1')
