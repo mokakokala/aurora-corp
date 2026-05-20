@@ -189,10 +189,10 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
             <button
               onClick={() => setShowRules(true)}
               className="flex items-center gap-1.5 text-xs tracking-widest text-orange-600 hover:text-orange-400 transition-colors uppercase"
-              title="Règles"
+              title="Instructions"
             >
               <BookOpen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Règles</span>
+              <span className="hidden sm:inline">Instructions</span>
             </button>
             <button
               onClick={onShowRewards}
