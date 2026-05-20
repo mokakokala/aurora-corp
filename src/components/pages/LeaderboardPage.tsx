@@ -96,6 +96,7 @@ export function LeaderboardPage({ onBack, currentUsername }: { onBack: () => voi
   // Classement
   const [leaders, setLeaders] = useState<LeaderEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [hiddenUsers, setHiddenUsers] = useState<string[]>([])
 
   // Wall of fame
   const [discoveries, setDiscoveries] = useState<DiscoveryEntry[]>([])
@@ -109,8 +110,13 @@ export function LeaderboardPage({ onBack, currentUsername }: { onBack: () => voi
 
   const fetchLeaders = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from('leaderboard').select('*').order('total_points', { ascending: false })
-    setLeaders((data ?? []) as LeaderEntry[])
+    const [leadRes, hiddenRes] = await Promise.all([
+      supabase.from('leaderboard').select('*').order('total_points', { ascending: false }),
+      supabase.from('hidden_users').select('username'),
+    ])
+    const hidden = ((hiddenRes.data ?? []) as { username: string }[]).map(r => r.username)
+    setHiddenUsers(hidden)
+    setLeaders((leadRes.data ?? []) as LeaderEntry[])
     setLoading(false)
   }, [])
 
@@ -158,6 +164,9 @@ export function LeaderboardPage({ onBack, currentUsername }: { onBack: () => voi
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [tab, selectedEgg, fetchLeaders, fetchDiscoveries, fetchMyQuests])
+
+  const visibleLeaders = leaders.filter(l => !hiddenUsers.includes(l.username.toLowerCase()))
+  const visibleDiscoveries = discoveries.filter(d => !hiddenUsers.includes(d.username.toLowerCase()))
 
   const foundIds = new Set(myQuests.map(q => q.easter_egg_id))
   const myPoints = myQuests.reduce((s, q) => {
@@ -346,11 +355,11 @@ export function LeaderboardPage({ onBack, currentUsername }: { onBack: () => voi
 
               {loading ? (
                 <p className="text-xs text-orange-600 tracking-widest py-8 text-center animate-pulse">Chargement...</p>
-              ) : leaders.length === 0 ? (
+              ) : visibleLeaders.length === 0 ? (
                 <p className="text-xs text-orange-700 tracking-widest py-8 text-center">Aucun scout inscrit.</p>
               ) : (
                 <div className="space-y-2">
-                  {leaders.map((entry, i) => {
+                  {visibleLeaders.map((entry, i) => {
                     const isMe = entry.username.toLowerCase() === currentUsername.toLowerCase()
                     const rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`
                     return (
@@ -430,13 +439,13 @@ export function LeaderboardPage({ onBack, currentUsername }: { onBack: () => voi
 
                 {wallLoading ? (
                   <p className="text-xs text-orange-600 tracking-widest py-6 text-center animate-pulse">Chargement...</p>
-                ) : discoveries.length === 0 ? (
+                ) : visibleDiscoveries.length === 0 ? (
                   <p className="text-xs text-orange-800 tracking-widest py-6 text-center">
                     Personne n'a encore découvert cette faille.
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {discoveries.map((d, i) => {
+                    {visibleDiscoveries.map((d, i) => {
                       const isMe = d.username.toLowerCase() === currentUsername.toLowerCase()
                       return (
                         <motion.div

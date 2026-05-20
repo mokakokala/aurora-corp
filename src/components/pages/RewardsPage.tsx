@@ -56,11 +56,14 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
   const [claiming, setClaiming] = useState(false)
 
   const fetchData = useCallback(async () => {
-    const [leadRes, claimRes] = await Promise.all([
-      supabase.from('leaderboard').select('username, total_points, discoveries_count').order('total_points', { ascending: false }).limit(5),
+    const [leadRes, claimRes, hiddenRes] = await Promise.all([
+      supabase.from('leaderboard').select('username, total_points, discoveries_count').order('total_points', { ascending: false }),
       supabase.from('reward_claims').select('*').order('claimed_at', { ascending: true }),
+      supabase.from('hidden_users').select('username'),
     ])
-    setLeaders((leadRes.data ?? []) as LeaderEntry[])
+    const hidden = ((hiddenRes.data ?? []) as { username: string }[]).map(r => r.username)
+    const allLeaders = (leadRes.data ?? []) as LeaderEntry[]
+    setLeaders(allLeaders.filter(l => !hidden.includes(l.username.toLowerCase())))
     setClaims((claimRes.data ?? []) as RewardClaim[])
     setLoading(false)
   }, [])
@@ -182,10 +185,10 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
                           {chosenReward && (
                             <p className="text-xs text-orange-500 tracking-wider mt-0.5">→ {chosenReward.name}</p>
                           )}
-                          {!chosenReward && isCurrentTurnPlayer && (
+                          {!chosenReward && missionComplete && isCurrentTurnPlayer && (
                             <p className="text-xs text-orange-400 tracking-wider mt-0.5 animate-pulse">En train de choisir...</p>
                           )}
-                          {!chosenReward && !isCurrentTurnPlayer && (
+                          {!chosenReward && missionComplete && !isCurrentTurnPlayer && (
                             <p className="text-xs text-orange-800 tracking-wider mt-0.5">En attente</p>
                           )}
                         </div>

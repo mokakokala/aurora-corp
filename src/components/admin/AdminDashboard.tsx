@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
   X, RefreshCw, Users, Search, KeyRound, AlertTriangle,
-  BarChart3, Loader2, ChevronRight, Trophy, Zap, Target,
+  BarChart3, Loader2, ChevronRight, Trophy, Zap, Target, EyeOff, Eye,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -305,10 +305,11 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [failedLogs, setFailedLogs] = useState<FailedLog[]>([])
   const [handPicks, setHandPicks] = useState<HandPickLog[]>([])
   const [connections, setConnections] = useState<ConnectionLog[]>([])
+  const [hiddenUsers, setHiddenUsers] = useState<string[]>([])
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [u, disc, eggDisc, lead, dna, pun, fail, hand, conn, codeRes] = await Promise.all([
+    const [u, disc, eggDisc, lead, dna, pun, fail, hand, conn, codeRes, hiddenRes] = await Promise.all([
       supabase.from('users').select('*').order('created_at', { ascending: false }),
       supabase.from('user_discoveries').select('*').order('discovered_at', { ascending: false }),
       supabase.from('easter_egg_discoveries').select('*').order('discovered_at', { ascending: false }),
@@ -319,6 +320,7 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
       supabase.from(HAND_PICK_TABLE).select('*').order('created_at', { ascending: false }),
       supabase.from(CONNECTION_LOG_TABLE).select('*').order('connected_at', { ascending: false }),
       supabase.from('admin_config').select('value').eq('key', 'first_code').single(),
+      supabase.from('hidden_users').select('username'),
     ])
     setUsers((u.data ?? []) as User[])
     setDiscoveries((disc.data ?? []) as UserDiscovery[])
@@ -330,8 +332,20 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
     setHandPicks((hand.data ?? []) as HandPickLog[])
     setConnections((conn.data ?? []) as ConnectionLog[])
     setOverrideCode((codeRes.data as { value: string } | null)?.value ?? null)
+    setHiddenUsers(((hiddenRes.data ?? []) as { username: string }[]).map(r => r.username))
     setLoading(false)
   }, [])
+
+  const toggleHideUser = async (username: string) => {
+    const lower = username.toLowerCase()
+    if (hiddenUsers.includes(lower)) {
+      await supabase.from('hidden_users').delete().eq('username', lower)
+      setHiddenUsers(prev => prev.filter(u => u !== lower))
+    } else {
+      await supabase.from('hidden_users').insert({ username: lower })
+      setHiddenUsers(prev => [...prev, lower])
+    }
+  }
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -500,6 +514,44 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
                     )
                   })}
                 </div>
+              )}
+            </Section>
+
+            {/* ── Animateurs masqués ── */}
+            <Section label="Classement" title="Masquer du Classement — Animateurs">
+              <p className="text-xs text-orange-700 tracking-wide pb-2">
+                Les utilisateurs masqués n'apparaissent plus dans le classement, le Wall of Fame ni les récompenses.
+              </p>
+              {users.length === 0 ? (
+                <p className="text-xs text-orange-700 tracking-widest py-4 text-center">Aucun utilisateur inscrit.</p>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {users.map(u => {
+                    const isHidden = hiddenUsers.includes(u.username.toLowerCase())
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => toggleHideUser(u.username)}
+                        className={`flex items-center justify-between gap-2 px-3 py-2 border text-left transition-all ${
+                          isHidden
+                            ? 'border-orange-800/60 bg-orange-900/20 text-orange-700'
+                            : 'border-orange-500/20 bg-black/40 text-orange-200 hover:border-orange-500/50'
+                        }`}
+                      >
+                        <span className="text-xs tracking-wider uppercase font-bold truncate">{u.username}</span>
+                        {isHidden
+                          ? <EyeOff className="h-3.5 w-3.5 text-orange-700 flex-shrink-0" />
+                          : <Eye className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
+                        }
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              {hiddenUsers.length > 0 && (
+                <p className="text-xs text-orange-700 tracking-widest pt-1">
+                  {hiddenUsers.length} utilisateur{hiddenUsers.length > 1 ? 's' : ''} masqué{hiddenUsers.length > 1 ? 's' : ''} : {hiddenUsers.join(', ')}
+                </p>
               )}
             </Section>
 
