@@ -17,7 +17,7 @@ const ASCII_HAND = `    | |  | |
        |     |
        |_____|`
 
-export function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function TermsModal({ open, onClose, minimal = false }: { open: boolean; onClose: () => void; minimal?: boolean }) {
   useEffect(() => {
     if (!open) return
     const raw = sessionStorage.getItem('aurora_identity')
@@ -107,10 +107,14 @@ export function TermsModal({ open, onClose }: { open: boolean; onClose: () => vo
 
               <div className="border-t border-orange-500/20 pt-6 flex flex-col items-center gap-5">
                 <p className="text-orange-500/40 text-xs tracking-widest">— FIN DES CONDITIONS D'UTILISATION —</p>
-                <pre className="text-orange-400/60 text-xs leading-tight select-none font-terminal text-center whitespace-pre">
-                  {ASCII_HAND}
-                </pre>
-                <p className="text-orange-300/90 text-5xl font-bold tracking-widest select-none leading-none">V</p>
+                {!minimal && (
+                  <>
+                    <pre className="text-orange-400/60 text-xs leading-tight select-none font-terminal text-center whitespace-pre">
+                      {ASCII_HAND}
+                    </pre>
+                    <p className="text-orange-300/90 text-5xl font-bold tracking-widest select-none leading-none">V</p>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

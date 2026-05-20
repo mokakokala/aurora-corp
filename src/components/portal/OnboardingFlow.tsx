@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, ChevronRight } from 'lucide-react'
+import { TermsModal } from '../ui/TermsModal'
 
 interface Props {
   onComplete: () => void
@@ -32,7 +33,7 @@ const CHECKBOX_LABELS = [
   "J'ai bien pris note des enjeux.",
   "J'ai bien pris note des failles à découvrir.",
   "Je certifie que je suis sur ordinateur (ou que je prends le risque de me limiter).",
-  "J'ai compris. Je vais créer mon compte unique maintenant.",
+  "J'ai compris. J'accepte les Termes et Conditions et je crée mon compte unique maintenant.",
 ]
 
 function FrameHeader({ tag, title }: { tag: string; title: string }) {
@@ -139,7 +140,7 @@ function Step3() {
   )
 }
 
-function Step4() {
+function Step4({ onShowTerms }: { onShowTerms: () => void }) {
   return (
     <div className="space-y-4">
       <FrameHeader tag="⚠ Étape cruciale" title="Création de ton Compte Agent" />
@@ -174,6 +175,16 @@ function Step4() {
           </div>
         </div>
       </div>
+      <p className="text-xs text-orange-500 tracking-wide leading-relaxed border border-orange-500/20 bg-orange-900/5 px-3 py-2.5">
+        Tout partage d'informations ou suspicion de triche entraînera des pénalités immédiates de points (
+        <button
+          onClick={onShowTerms}
+          className="text-orange-300 underline underline-offset-2 hover:text-orange-200 transition-colors"
+        >
+          voir Termes et Conditions
+        </button>
+        ).
+      </p>
     </div>
   )
 }
@@ -181,6 +192,7 @@ function Step4() {
 export function OnboardingFlow({ onComplete }: Props) {
   const [step, setStep] = useState(0)
   const [checked, setChecked] = useState(false)
+  const [showTerms, setShowTerms] = useState(false)
 
   const isLast = step === TOTAL_STEPS - 1
 
@@ -194,6 +206,8 @@ export function OnboardingFlow({ onComplete }: Props) {
   }
 
   return (
+    <>
+    <TermsModal open={showTerms} onClose={() => setShowTerms(false)} minimal />
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/97 backdrop-blur-sm p-4"
       initial={{ opacity: 0 }}
@@ -233,7 +247,7 @@ export function OnboardingFlow({ onComplete }: Props) {
               {step === 1 && <Step1 />}
               {step === 2 && <Step2 />}
               {step === 3 && <Step3 />}
-              {step === 4 && <Step4 />}
+              {step === 4 && <Step4 onShowTerms={() => setShowTerms(true)} />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -261,5 +275,6 @@ export function OnboardingFlow({ onComplete }: Props) {
         </div>
       </div>
     </motion.div>
+    </>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { X, ChevronRight, AlertTriangle } from 'lucide-react'
+import { TermsModal } from './TermsModal'
 
 const REWARDS = [
   { name: "Autorisation d'amener une chaise de camping au camp", desc: "Tu as le permis exceptionnel d'emmener une chaise de camping en Croatie (normalement interdit à l'étranger)." },
@@ -128,7 +129,7 @@ function Step3() {
   )
 }
 
-function Step4() {
+function Step4({ onShowTerms }: { onShowTerms: () => void }) {
   return (
     <div className="space-y-4">
       <FrameHeader tag="⚠ Étape cruciale" title="Création de ton Compte Agent" />
@@ -163,19 +164,33 @@ function Step4() {
           </div>
         </div>
       </div>
+      <p className="text-xs text-orange-500 tracking-wide leading-relaxed border border-orange-500/20 bg-orange-900/5 px-3 py-2.5">
+        Tout partage d'informations ou suspicion de triche entraînera des pénalités immédiates de points (
+        <button
+          onClick={onShowTerms}
+          className="text-orange-300 underline underline-offset-2 hover:text-orange-200 transition-colors"
+        >
+          voir Termes et Conditions
+        </button>
+        ).
+      </p>
     </div>
   )
 }
 
 export function RulesModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [step, setStep] = useState(0)
+  const [showTerms, setShowTerms] = useState(false)
 
   const handleClose = () => {
     setStep(0)
     onClose()
   }
 
-  return createPortal(
+  return (
+    <>
+    <TermsModal open={showTerms} onClose={() => setShowTerms(false)} minimal />
+    {createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -229,7 +244,7 @@ export function RulesModal({ open, onClose }: { open: boolean; onClose: () => vo
                   {step === 1 && <Step1 />}
                   {step === 2 && <Step2 />}
                   {step === 3 && <Step3 />}
-                  {step === 4 && <Step4 />}
+                  {step === 4 && <Step4 onShowTerms={() => setShowTerms(true)} />}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -263,5 +278,7 @@ export function RulesModal({ open, onClose }: { open: boolean; onClose: () => vo
       )}
     </AnimatePresence>,
     document.body
+  )}
+    </>
   )
 }
