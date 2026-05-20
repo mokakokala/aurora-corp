@@ -113,6 +113,8 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const [showKangalVideo, setShowKangalVideo] = useState(false)
   const [showMangabeyVideo, setShowMangabeyVideo] = useState(false)
   const [showChaouiVideo, setShowChaouiVideo] = useState(false)
+  const [nightMode, setNightMode] = useState(false)
+  const [flashlightPos, setFlashlightPos] = useState({ x: -999, y: -999 })
   const [showPeaceSign, setShowPeaceSign] = useState(false)
   const [showBickyBurger, setShowBickyBurger] = useState(false)
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
@@ -120,10 +122,22 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
 
   useEffect(() => () => clearTimeout(timeoutRef.current), [])
 
+  useEffect(() => {
+    if (!nightMode) return
+    const handler = (e: MouseEvent) => setFlashlightPos({ x: e.clientX, y: e.clientY })
+    window.addEventListener('mousemove', handler)
+    return () => window.removeEventListener('mousemove', handler)
+  }, [nightMode])
+
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
     const scannedId = input.trim()
+    if (/^night$/i.test(scannedId)) {
+      setNightMode(n => !n)
+      setInput('')
+      return
+    }
     setSubmittedId(scannedId)
     setStep('scanning')
     timeoutRef.current = setTimeout(() => {
@@ -185,6 +199,16 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   return (
     <>
     <PeaceSignModal open={showPeaceSign} onClose={() => setShowPeaceSign(false)} />
+
+    {nightMode && createPortal(
+      <div
+        className="fixed inset-0 z-[9999] pointer-events-none"
+        style={{
+          background: `radial-gradient(circle 160px at ${flashlightPos.x}px ${flashlightPos.y}px, transparent 0%, rgba(0,0,0,0.97) 80%)`,
+        }}
+      />,
+      document.body
+    )}
 
     {createPortal(
       <AnimatePresence>
