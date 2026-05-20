@@ -111,7 +111,7 @@ export function LeaderboardPage({ onBack, currentUsername }: { onBack: () => voi
   const fetchLeaders = useCallback(async () => {
     setLoading(true)
     const [leadRes, hiddenRes] = await Promise.all([
-      supabase.from('leaderboard').select('*').order('total_points', { ascending: false }),
+      supabase.from('leaderboard').select('*').order('total_points', { ascending: false }).order('last_discovery_at', { ascending: true }),
       supabase.from('hidden_users').select('username'),
     ])
     const hidden = ((hiddenRes.data ?? []) as { username: string }[]).map(r => r.username)
