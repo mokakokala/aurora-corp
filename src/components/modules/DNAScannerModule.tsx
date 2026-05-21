@@ -17,6 +17,34 @@ function normalizeName(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 }
 
+async function sha256(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const H = {
+  colette:      '7666de628810c3b4fce4deacfba00236c2291063d7838630fac9b6e84a48138a',
+  bicky_burger: 'cd224f1b40c1173d8318ca598f3934dd194b07acda9c978c271e2a21f10961f6',
+  andalouse:    '1a81216142fa8fdef6212c84f86b6c3801b86d770ccc1d7bd7e8e2fcadcea3df',
+  pauwels:      '65cac3e92782e3cdfaef8ef817092f71ee3d9113fd23ceb2e8c132b2012a4604',
+  magot:        '907d4be65afe7636fa0bd3f9684a8d7ebcff8a68c70dcd9fa48018829b02ee24',
+  souslik:      '879d674bba4b991f3140d70bd4f7f1cf9344f1449c01c1a335ad394e8b5b5214',
+  atele:        'acf22573c17bb906367ebb0076193375ef243e209b3a67bac613c6795a6b2742',
+  saiga:        'd585a277f29969f83ae1bd8a7e455de824a8f0060cddb4d7e1f7718f3c0a71b9',
+  nagor:        '2cec04dfae2378e85dd61acf8ff711cb18825451dd925b8f3fca9526f9150059',
+  aonyx:        '0aecb11f21181ee9ba37462c6742d5ca6d52cab95e7588c65be6f9cb34b2a49f',
+  aionyx:       '9119b10f2dc63b5dcf87397bff20a1673ec4975f61e01f2a436c456f67a78744',
+  bison:        '6850caa451bf83b8213561d8cdb128d78ec3ee37b5c778c12bf26d6dec581b53',
+  gecko:        'b0b23803279f82a28b0db4118f688ddcee308e0cb689f892f2a47c0074c36f27',
+  ourebi:       '7e6dbdd5e42bef67c6c4ec2d06cb80f586b336c24c4a9c03ee3a912508d0a21f',
+  v:            '4c94485e0c21ae6c41ce1dfe7b6bfaceea5ab68e40a2476f50208e526f506080',
+  night:        '176473d7313395b6e209bc6b1d57aa160b628706860aa0554d7af60a1d40ab87',
+  ashera:       '9742db9f98149d1fa569170ff81fcde9bce55950482a144d07454cd1863e63c3',
+  kangal:       '5d72d95669f5024eb65e722264c17e5c0e7fcf73f28bbc2fdffe771cf4709eae',
+  mangabey:     'c03194b806edd17cd9b5dec9c1c40c14e9e929250a005e60cd4af3f603cdfc5c',
+  chaoui:       '12c847a73ef995d25bd4caf1668da0de2bf170ad7081e494178e89aeb4390859',
+} as const
+
 const MEMBER_FACTIONS: [string, string][] = [
   ['Asio', 'Coexistants'], ['Douc', 'Coexistants'], ['Azandica', 'Coexistants'],
   ['Springbok', 'Coexistants'], ['Warrah', 'Coexistants'], ['Vanneau', 'Coexistants'],
@@ -114,6 +142,7 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
   const [showMangabeyVideo, setShowMangabeyVideo] = useState(false)
   const [showChaouiVideo, setShowChaouiVideo] = useState(false)
   const [showOurebiVideo, setShowOurebiVideo] = useState(false)
+  const [submittedHash, setSubmittedHash] = useState('')
   const [nightMode, setNightMode] = useState(false)
   const [flashlightPos, setFlashlightPos] = useState({ x: -999, y: -999 })
   const [showPeaceSign, setShowPeaceSign] = useState(false)
@@ -130,20 +159,22 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     return () => window.removeEventListener('mousemove', handler)
   }, [nightMode])
 
-  const handleScan = (e: React.FormEvent) => {
+  const handleScan = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim()) return
     const scannedId = input.trim()
-    if (/^night$/i.test(scannedId)) {
+    const h = await sha256(normalizeName(scannedId))
+    if (h === H.night) {
       setNightMode(n => !n)
       setInput('')
       return
     }
     setSubmittedId(scannedId)
+    setSubmittedHash(h)
     setStep('scanning')
     timeoutRef.current = setTimeout(() => {
       setStep('result')
-      if (/colette/i.test(scannedId)) { setShowColettePopup(true); logEasterEggView('rappeur_obi_wan'); discoverEasterEgg('rappeur_obi_wan') }
+      if (h === H.colette) { setShowColettePopup(true); logEasterEggView('rappeur_obi_wan'); discoverEasterEgg('rappeur_obi_wan') }
       const raw = sessionStorage.getItem('aurora_identity')
       const identity = raw ? JSON.parse(raw) as { prenom_totem: string; ip?: string; city?: string } : null
       supabase.from(DNA_SCAN_TABLE).insert([{
@@ -170,27 +201,26 @@ export function DNAScannerModule({ onDiscoverMembers }: { onDiscoverMembers?: ()
     setShowBickyBurger(false)
   }
 
-  const n = normalizeName(submittedId)
-  const isVSign = submittedId.trim() === 'V'
-  const isBickyBurger = n === 'bicky burger'
+  const isVSign = submittedHash === H.v
+  const isBickyBurger = submittedHash === H.bicky_burger
   const isAurora = /^a\.?u\.?r\.?o\.?r\.?a\.?(\s+corp\.?)?$/i.test(submittedId.trim())
-  const isColette = n === 'colette'
-  const isAndalouse = n === 'andalouse' || n === 'pauwels'
-  const isMagot = n === 'magot'
-  const isSouslik = n === 'souslik'
-  const isAtele = n === 'atele'
-  const isSaiga = n === 'saiga'
-  const isNagor = n === 'nagor'
-  const isAonyx = n === 'aonyx' || n === 'aionyx'
-  const isBison = n === 'bison'
-  const isGecko = n === 'gecko'
+  const isColette = submittedHash === H.colette
+  const isAndalouse = submittedHash === H.andalouse || submittedHash === H.pauwels
+  const isMagot = submittedHash === H.magot
+  const isSouslik = submittedHash === H.souslik
+  const isAtele = submittedHash === H.atele
+  const isSaiga = submittedHash === H.saiga
+  const isNagor = submittedHash === H.nagor
+  const isAonyx = submittedHash === H.aonyx || submittedHash === H.aionyx
+  const isBison = submittedHash === H.bison
+  const isGecko = submittedHash === H.gecko
   const isCoords = /44[.,]?5170*\d*°?\s*N\s+15[.,]?5313*\d*°?\s*E/i.test(submittedId)
 
-  const isAshera = !expired && /ashera/i.test(submittedId)
-  const isKangal = !expired && /kangal/i.test(submittedId)
-  const isMangabey = !expired && /mangabey/i.test(submittedId)
-  const isChaoui = !expired && /chaoui/i.test(submittedId)
-  const isOurebi = !expired && n === 'ourebi'
+  const isAshera = !expired && submittedHash === H.ashera
+  const isKangal = !expired && submittedHash === H.kangal
+  const isMangabey = !expired && submittedHash === H.mangabey
+  const isChaoui = !expired && submittedHash === H.chaoui
+  const isOurebi = !expired && submittedHash === H.ourebi
   const factionNameMatch = expired ? findFactionByName(submittedId) : null
   const factionMatch = expired && !factionNameMatch ? findFaction(submittedId) : null
 
