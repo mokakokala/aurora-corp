@@ -4,7 +4,7 @@ export const GLITCH_INTERVAL_MS = 60000
 export const GLITCH_DURATION_MS = 800
 
 /** Target unlock date — next Monday at 16:00 local time */
-export const TARGET_DATE = new Date('2026-05-25T15:00:00') // TEST — remettre 2026-05-25T15:00:00
+export const TARGET_DATE = new Date('2026-05-23T15:00:00') // TEST — remettre 2026-05-25T15:00:00
 
 export const GPS_COORDINATES = { lat: 44.517008, lng: 15.53136 }
 
