@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { discoverEasterEgg } from '../../lib/discoverEasterEgg'
 import { PunishmentModal } from './PunishmentModal'
 import { useAdminCode } from '../../hooks/useAdminCode'
+
 const WEAK_CODES = new Set(['0000','1111','2222','3333','4444','5555','6666','7777','8888','9999','1234','2929','2933','2026','2626','2525'])
 
 function DigitBox({ value, label }: { value: number; label: string }) {
@@ -30,7 +31,15 @@ function DigitBox({ value, label }: { value: number; label: string }) {
   )
 }
 
-export function CountdownModule() {
+interface Props {
+  animDone?: boolean
+  postReveal?: boolean
+}
+
+export function CountdownModule({
+  animDone  = sessionStorage.getItem('aurora_endanim') === '1',
+  postReveal = false,
+}: Props) {
   const adminCode = useAdminCode()
   const { days, hours, minutes, seconds, expired } = useCountdown(TARGET_DATE)
   const [blockedClicks, setBlockedClicks] = useState(0)
@@ -47,9 +56,9 @@ export function CountdownModule() {
   const [showPunishment, setShowPunishment] = useState(false)
   const [punishmentNumber, setPunishmentNumber] = useState(1)
 
-  const isUnlocked = expired || manualUnlock
+  const isUnlocked = (expired && animDone) || manualUnlock
 
-  if (manualUnlock) document.documentElement.classList.add('override-active')
+  if (manualUnlock || animDone) document.documentElement.classList.add('override-active')
 
   const handleBlockedClick = () => {
     if (isUnlocked) return
@@ -119,7 +128,6 @@ export function CountdownModule() {
       />
     )}
 
-    {/* Popup sorti du motion.div opacity pour ne pas hériter de son opacité */}
     <AnimatePresence>
       {showWarning && (
         <motion.div
@@ -285,8 +293,11 @@ export function CountdownModule() {
             href={`${import.meta.env.BASE_URL}Carnet%20de%20camp_Troupe%20de%20l'Aurore_Croatie%202026.pdf`}
             download="Carnet de camp_Troupe de l'Aurore_Croatie 2026.pdf"
             className="flex w-full items-center justify-center gap-3 border border-orange-500/70 bg-orange-500/15 px-6 py-4 text-xs tracking-[0.3em] text-orange-300 uppercase transition-all duration-300 hover:bg-orange-500/25 hover:border-orange-400"
-            animate={{ boxShadow: ['0 0 0px rgba(249,115,22,0)', '0 0 20px rgba(249,115,22,0.3)', '0 0 0px rgba(249,115,22,0)'] }}
-            transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+            animate={postReveal
+              ? { boxShadow: ['0 0 0px rgba(255,255,255,0)', '0 0 50px rgba(255,255,255,0.95)', '0 0 15px rgba(255,255,255,0.3)', '0 0 0px rgba(255,255,255,0)'] }
+              : { boxShadow: ['0 0 0px rgba(249,115,22,0)', '0 0 20px rgba(249,115,22,0.3)', '0 0 0px rgba(249,115,22,0)'] }
+            }
+            transition={{ repeat: Infinity, duration: postReveal ? 2.0 : 2, ease: 'easeInOut' }}
           >
             <Download className="h-4 w-4" />
             Télécharger le document

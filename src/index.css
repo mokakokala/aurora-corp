@@ -67,6 +67,44 @@ body {
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ── Tremblement countdown reveal ───────────────────────────────────────── */
+@keyframes tremor-1 {
+  0%, 100% { transform: translate(0, 0); }
+  33%       { transform: translate(-1.5px, 0.5px); }
+  66%       { transform: translate(1.5px, -0.5px); }
+}
+@keyframes tremor-2 {
+  0%, 100% { transform: translate(0, 0); }
+  25%       { transform: translate(-3px, 1px); }
+  50%       { transform: translate(3px, -1px); }
+  75%       { transform: translate(-2px, 2px); }
+}
+@keyframes tremor-3 {
+  0%, 100% { transform: translate(0, 0); }
+  20%       { transform: translate(-5px, 2px); }
+  40%       { transform: translate(5px, -2px); }
+  60%       { transform: translate(-4px, 3px); }
+  80%       { transform: translate(4px, -3px); }
+}
+@keyframes quake {
+  0%        { transform: translate(0, 0) rotate(0deg); }
+  10%       { transform: translate(-12px, 5px) rotate(-0.5deg); }
+  20%       { transform: translate(12px, -5px) rotate(0.5deg); }
+  30%       { transform: translate(-9px, 7px) rotate(-0.3deg); }
+  40%       { transform: translate(9px, -7px) rotate(0.3deg); }
+  50%       { transform: translate(-14px, 4px) rotate(-0.6deg); }
+  60%       { transform: translate(14px, -4px) rotate(0.6deg); }
+  70%       { transform: translate(-7px, 9px) rotate(-0.2deg); }
+  80%       { transform: translate(7px, -9px) rotate(0.2deg); }
+  90%       { transform: translate(-10px, 3px) rotate(-0.4deg); }
+  100%      { transform: translate(0, 0) rotate(0deg); }
+}
+
+.anim-tremor-1 { animation: tremor-1 0.35s ease-in-out infinite; }
+.anim-tremor-2 { animation: tremor-2 0.18s ease-in-out infinite; }
+.anim-tremor-3 { animation: tremor-3 0.10s ease-in-out infinite; }
+.anim-quake    { animation: quake   0.08s ease-in-out infinite; }
+
 /* ── Override mode: orange accent → vert ─────────────────────────────────── */
 .override-active * {
   transition: color 0.8s ease, border-color 0.8s ease, background-color 0.8s ease !important;

@@ -6,6 +6,7 @@ import { Timer, Map, Search, Radio, LogOut, Trophy, Gift, BookOpen } from 'lucid
 import { TARGET_DATE } from '../../config/constants'
 import { useCountdown } from '../../hooks/useCountdown'
 import { CountdownModule } from '../modules/CountdownModule'
+import { CountdownEndSequence } from '../modules/CountdownEndSequence'
 import { RadarMapModule } from '../modules/RadarMapModule'
 import { DNAScannerModule } from '../modules/DNAScannerModule'
 import { AudioLogModule } from '../modules/AudioLogModule'
@@ -61,8 +62,17 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
     return () => clearTimeout(t)
   }, [dotClicks])
 
-  // Easter egg 13 — overlay jour J
+  // Animation fin de compte à rebours — gérée ici pour survivre aux changements d'onglet
   const { expired } = useCountdown(TARGET_DATE)
+  const [animDone,    setAnimDone]    = useState(() => sessionStorage.getItem('aurora_endanim') === '1')
+  const [showEndAnim, setShowEndAnim] = useState(false)
+  const [postReveal,  setPostReveal]  = useState(false)
+
+  useEffect(() => {
+    if (expired && !animDone && !showEndAnim) setShowEndAnim(true)
+  }, [expired, animDone, showEndAnim])
+
+  // Easter egg 13 — overlay jour J
   const [showDayJ, setShowDayJ] = useState(() =>
     TARGET_DATE.getTime() <= Date.now() && !sessionStorage.getItem('aurora_dayj')
   )
@@ -91,6 +101,21 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
 
   return (
     <>
+    {showEndAnim && (
+      <CountdownEndSequence
+        baseUrl={import.meta.env.BASE_URL}
+        onReveal={() => {
+          sessionStorage.setItem('aurora_endanim', '1')
+          setAnimDone(true)
+          document.documentElement.classList.add('override-active')
+          setPostReveal(true)
+        }}
+        onDone={() => {
+          setShowEndAnim(false)
+          setPostReveal(false)
+        }}
+      />
+    )}
     {adminOpen && <AdminTerminal onClose={() => setAdminOpen(false)} />}
     <TermsModal open={showTerms} onClose={() => setShowTerms(false)} />
     <RulesModal open={showRules} onClose={() => setShowRules(false)} />
@@ -272,7 +297,9 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
           >
             {activeTab === 'dna'
               ? <DNAScannerModule onDiscoverMembers={onDiscoverMembers} />
-              : <ActiveComponent />
+              : activeTab === 'countdown'
+                ? <CountdownModule animDone={animDone} postReveal={postReveal} />
+                : <ActiveComponent />
             }
           </motion.section>
         </AnimatePresence>
