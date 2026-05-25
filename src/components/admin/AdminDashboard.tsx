@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import {
   X, RefreshCw, Users, Search, KeyRound, AlertTriangle,
   BarChart3, Loader2, ChevronRight, Trophy, Zap, Target, EyeOff, Eye,
+  ArrowUp, ArrowDown, Plus, Trash2, Save, CheckCircle2,
 } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -62,6 +63,9 @@ interface HandPickLog {
 }
 interface ConnectionLog {
   id: string; username: string; ip: string | null; city: string | null; connected_at: string
+}
+interface GameRating {
+  id: number; username: string; rating: number; comment: string; created_at: string
 }
 
 // ─── Faction helpers ──────────────────────────────────────────────────────────
@@ -306,10 +310,14 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
   const [handPicks, setHandPicks] = useState<HandPickLog[]>([])
   const [connections, setConnections] = useState<ConnectionLog[]>([])
   const [hiddenUsers, setHiddenUsers] = useState<string[]>([])
+  const [ratings, setRatings] = useState<GameRating[]>([])
+  const [manualRanking, setManualRanking] = useState<string[]>([])
+  const [manualRankingSaved, setManualRankingSaved] = useState(false)
+  const [manualRankingSaving, setManualRankingSaving] = useState(false)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [u, disc, eggDisc, lead, dna, pun, fail, hand, conn, codeRes, hiddenRes] = await Promise.all([
+    const [u, disc, eggDisc, lead, dna, pun, fail, hand, conn, codeRes, hiddenRes, rankRes, ratingsRes] = await Promise.all([
       supabase.from('users').select('*').order('created_at', { ascending: false }),
       supabase.from('user_discoveries').select('*').order('discovered_at', { ascending: false }),
       supabase.from('easter_egg_discoveries').select('*').order('discovered_at', { ascending: false }),
@@ -321,6 +329,8 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
       supabase.from(CONNECTION_LOG_TABLE).select('*').order('connected_at', { ascending: false }),
       supabase.from('admin_config').select('value').eq('key', 'first_code').single(),
       supabase.from('hidden_users').select('username'),
+      supabase.from('admin_config').select('value').eq('key', 'manual_ranking').maybeSingle(),
+      supabase.from('game_ratings').select('*').order('created_at', { ascending: false }),
     ])
     setUsers((u.data ?? []) as User[])
     setDiscoveries((disc.data ?? []) as UserDiscovery[])
@@ -333,6 +343,14 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
     setConnections((conn.data ?? []) as ConnectionLog[])
     setOverrideCode((codeRes.data as { value: string } | null)?.value ?? null)
     setHiddenUsers(((hiddenRes.data ?? []) as { username: string }[]).map(r => r.username))
+    const rankData = rankRes.data as { value: string } | null
+    if (rankData?.value) {
+      try {
+        const parsed = JSON.parse(rankData.value)
+        setManualRanking(Array.isArray(parsed) ? parsed : [])
+      } catch { setManualRanking([]) }
+    }
+    setRatings((ratingsRes.data ?? []) as GameRating[])
     setLoading(false)
   }, [])
 
@@ -345,6 +363,45 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
       await supabase.from('hidden_users').insert({ username: lower })
       setHiddenUsers(prev => [...prev, lower])
     }
+  }
+
+  const addToManualRanking = (username: string) => {
+    if (manualRanking.length >= 6) return
+    if (manualRanking.includes(username)) return
+    setManualRanking(prev => [...prev, username])
+    setManualRankingSaved(false)
+  }
+
+  const removeFromManualRanking = (username: string) => {
+    setManualRanking(prev => prev.filter(u => u !== username))
+    setManualRankingSaved(false)
+  }
+
+  const moveManualRanking = (index: number, dir: -1 | 1) => {
+    const newList = [...manualRanking]
+    const target = index + dir
+    if (target < 0 || target >= newList.length) return
+    ;[newList[index], newList[target]] = [newList[target], newList[index]]
+    setManualRanking(newList)
+    setManualRankingSaved(false)
+  }
+
+  const saveManualRanking = async () => {
+    setManualRankingSaving(true)
+    const value = JSON.stringify(manualRanking)
+    const { data: existing } = await supabase
+      .from('admin_config')
+      .select('key')
+      .eq('key', 'manual_ranking')
+      .maybeSingle()
+    if (existing) {
+      await supabase.from('admin_config').update({ value }).eq('key', 'manual_ranking')
+    } else {
+      await supabase.from('admin_config').insert({ key: 'manual_ranking', value })
+    }
+    setManualRankingSaving(false)
+    setManualRankingSaved(true)
+    setTimeout(() => setManualRankingSaved(false), 3000)
   }
 
   useEffect(() => { fetchAll() }, [fetchAll])
@@ -555,6 +612,120 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
               )}
             </Section>
 
+            {/* ── Classement Manuel — Récompenses ── */}
+            <Section label="Récompenses" title="Classement Manuel — Top 6">
+              <p className="text-xs text-orange-700 tracking-wide pb-3">
+                Définissez l'ordre du classement ajusté. Ce classement remplace le classement automatique dans la page Récompenses. Maximum 6 scouts.
+              </p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Classement manuel actuel */}
+                <div className="space-y-2">
+                  <p className="text-xs tracking-[0.2em] text-orange-600 uppercase pb-1 border-b border-orange-500/20">
+                    Ordre actuel ({manualRanking.length}/6)
+                  </p>
+                  {manualRanking.length === 0 ? (
+                    <p className="text-xs text-orange-800 tracking-widest py-4 text-center">
+                      Aucun classement défini — cliquez sur des joueurs à droite pour les ajouter.
+                    </p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {manualRanking.map((username, i) => (
+                        <div key={username} className="flex items-center gap-2 px-3 py-2 border border-orange-500/30 bg-black/40">
+                          <span className="text-sm w-6 flex-shrink-0 text-center">
+                            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                          </span>
+                          <span className="flex-1 text-xs tracking-wider uppercase font-bold text-orange-200 truncate">
+                            {username}
+                          </span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => moveManualRanking(i, -1)}
+                              disabled={i === 0}
+                              className="p-1 text-orange-600 hover:text-orange-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <ArrowUp className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => moveManualRanking(i, 1)}
+                              disabled={i === manualRanking.length - 1}
+                              className="p-1 text-orange-600 hover:text-orange-400 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <ArrowDown className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => removeFromManualRanking(username)}
+                              className="p-1 text-orange-800 hover:text-red-500 transition-colors"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Save button */}
+                  <button
+                    onClick={saveManualRanking}
+                    disabled={manualRankingSaving || manualRanking.length === 0}
+                    className={`mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-xs tracking-[0.2em] uppercase border transition-all ${
+                      manualRankingSaved
+                        ? 'border-green-500/50 bg-green-900/20 text-green-400'
+                        : 'border-orange-500/50 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20 disabled:opacity-40 disabled:cursor-not-allowed'
+                    }`}
+                  >
+                    {manualRankingSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : manualRankingSaved ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    {manualRankingSaved ? 'Classement sauvegardé !' : 'Sauvegarder le classement'}
+                  </button>
+                </div>
+
+                {/* Pool de joueurs */}
+                <div className="space-y-2">
+                  <p className="text-xs tracking-[0.2em] text-orange-600 uppercase pb-1 border-b border-orange-500/20">
+                    Joueurs disponibles (classement auto)
+                  </p>
+                  {leaders.length === 0 ? (
+                    <p className="text-xs text-orange-800 tracking-widest py-4 text-center">Aucun joueur inscrit.</p>
+                  ) : (
+                    <div className="space-y-1 max-h-72 overflow-y-auto">
+                      {leaders.map((entry, i) => {
+                        const inRanking = manualRanking.includes(entry.username)
+                        return (
+                          <button
+                            key={entry.username}
+                            onClick={() => inRanking ? removeFromManualRanking(entry.username) : addToManualRanking(entry.username)}
+                            disabled={!inRanking && manualRanking.length >= 6}
+                            className={`w-full flex items-center gap-2 px-3 py-2 border text-left transition-all ${
+                              inRanking
+                                ? 'border-orange-400/60 bg-orange-500/15 text-orange-300'
+                                : manualRanking.length >= 6
+                                ? 'border-orange-500/10 bg-black/20 text-orange-800 cursor-not-allowed'
+                                : 'border-orange-500/20 bg-black/40 text-orange-200 hover:border-orange-500/50 hover:bg-orange-500/5'
+                            }`}
+                          >
+                            <span className="text-xs text-orange-700 w-6 text-center flex-shrink-0">#{i + 1}</span>
+                            <span className="flex-1 text-xs tracking-wider uppercase font-bold truncate">{entry.username}</span>
+                            <span className="text-xs text-orange-800 flex-shrink-0">{entry.total_points} pts</span>
+                            {inRanking
+                              ? <CheckCircle2 className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+                              : <Plus className="h-3.5 w-3.5 text-orange-700 flex-shrink-0" />
+                            }
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Section>
+
             {/* ── Avancement par faille ── */}
             <Section label="Failles" title="Avancement par Faille">
               <div className="h-64">
@@ -701,6 +872,53 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
                 )}
               </Section>
             </div>
+
+            {/* ── Retours terrain ── */}
+            <Section label="Retours" title="Avis des Scouts">
+              {ratings.length === 0 ? (
+                <p className="text-xs text-orange-700 tracking-widest py-4 text-center">Aucun avis reçu.</p>
+              ) : (
+                <div className="space-y-4">
+                  {/* Note moyenne */}
+                  <div className="flex items-center gap-4 border border-orange-500/20 bg-black/40 px-4 py-3">
+                    <div>
+                      <p className="text-xs tracking-[0.2em] text-orange-600 uppercase">Note moyenne</p>
+                      <p className="text-2xl font-bold text-orange-300 tracking-wider">
+                        {(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1)}
+                        <span className="text-sm text-orange-600 font-normal"> / 5</span>
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1,2,3,4,5].map(n => {
+                        const avg = ratings.reduce((s, r) => s + r.rating, 0) / ratings.length
+                        return (
+                          <span key={n} className={`text-lg ${n <= Math.round(avg) ? 'text-orange-400' : 'text-orange-900'}`}>★</span>
+                        )
+                      })}
+                    </div>
+                    <p className="ml-auto text-xs text-orange-700 tracking-widest">{ratings.length} avis</p>
+                  </div>
+
+                  {/* Liste des avis */}
+                  <div className="space-y-2">
+                    {ratings.map(r => (
+                      <div key={r.id} className="border border-orange-500/15 bg-black/30 px-4 py-3 space-y-1.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs font-bold tracking-wider uppercase text-orange-200">{r.username}</span>
+                          <div className="flex gap-0.5">
+                            {[1,2,3,4,5].map(n => (
+                              <span key={n} className={`text-sm ${n <= r.rating ? 'text-orange-400' : 'text-orange-900'}`}>★</span>
+                            ))}
+                          </div>
+                          <span className="text-xs text-orange-800 tracking-widest ml-auto">{fmtBrussels(r.created_at)}</span>
+                        </div>
+                        <p className="text-xs text-orange-500 tracking-wide leading-relaxed">{r.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Section>
 
             {/* ── Données brutes ── */}
             <Section label="Base de données" title="Données Brutes">

@@ -1,34 +1,40 @@
 import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Gift, Trophy, CheckCircle2, Clock, Lock, Loader2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ArrowLeft, Gift, Trophy, CheckCircle2, Clock, Lock, Loader2, AlertTriangle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { TARGET_DATE } from '../../config/constants'
 
 const REWARDS = [
   {
     id: 1,
-    name: 'Chaise de camping',
-    description: "Tu as le permis exceptionnel d'emmener une chaise de camping en Croatie (normalement interdit à l'étranger).",
+    name: "Intendant privé d'un soir",
+    description: "Un intendant cuisine pour ta patrouille un soir, valable hors CC.",
   },
   {
     id: 2,
-    name: 'Ticket coupe-file',
-    description: "Valable une seule fois, il te permet de passer instantanément premier dans n'importe quelle file.",
+    name: 'Petit-déjeuner de luxe',
+    description: "Livré directement à ton pilo au réveil.",
   },
   {
     id: 3,
-    name: "Intendant privé d'un soir",
-    description: "Tu peux engager un intendant pour qu'il cuisine un soir dans ta patrouille. (Pas valable pour CC).",
+    name: 'Petit-déjeuner de luxe',
+    description: "Livré directement à ton pilo au réveil.",
   },
   {
     id: 4,
-    name: 'Petit-déjeuner de luxe',
-    description: "Tu te fais livrer ton petit dej. à ton pilo dès ton réveil.",
+    name: 'Apéro de luxe',
+    description: "Boisson et snacks servis sur la plaine.",
   },
   {
     id: 5,
     name: 'Apéro de luxe',
-    description: "Tu reçois boisson et snack directement sur la plaine pour te faire un petit apéro trkl.",
+    description: "Boisson et snacks servis sur la plaine.",
+  },
+  {
+    id: 6,
+    name: 'Ticket Coupe-file',
+    description: "Priorité absolue, valable une seule fois.",
   },
 ]
 
@@ -36,6 +42,10 @@ interface LeaderEntry {
   username: string
   total_points: number
   discoveries_count: number
+}
+
+interface RankEntry {
+  username: string
 }
 
 interface RewardClaim {
@@ -50,21 +60,37 @@ function medal(rank: number) {
 }
 
 export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; currentUsername: string }) {
-  const [leaders, setLeaders] = useState<LeaderEntry[]>([])
+  const [allLeaders, setAllLeaders] = useState<LeaderEntry[]>([])
   const [claims, setClaims] = useState<RewardClaim[]>([])
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
+  const [manualRanking, setManualRanking] = useState<string[] | null>(null)
+  const [pendingReward, setPendingReward] = useState<{ id: number; name: string } | null>(null)
 
   const fetchData = useCallback(async () => {
-    const [leadRes, claimRes, hiddenRes] = await Promise.all([
+    const [leadRes, claimRes, hiddenRes, rankRes] = await Promise.all([
       supabase.from('leaderboard').select('username, total_points, discoveries_count').order('total_points', { ascending: false }),
       supabase.from('reward_claims').select('*').order('claimed_at', { ascending: true }),
       supabase.from('hidden_users').select('username'),
+      supabase.from('admin_config').select('value').eq('key', 'manual_ranking').maybeSingle(),
     ])
     const hidden = ((hiddenRes.data ?? []) as { username: string }[]).map(r => r.username)
-    const allLeaders = (leadRes.data ?? []) as LeaderEntry[]
-    setLeaders(allLeaders.filter(l => !hidden.includes(l.username.toLowerCase())))
+    const leadersData = (leadRes.data ?? []) as LeaderEntry[]
+    setAllLeaders(leadersData.filter(l => !hidden.includes(l.username.toLowerCase())))
     setClaims((claimRes.data ?? []) as RewardClaim[])
+
+    const rankData = rankRes.data as { value: string } | null
+    if (rankData?.value) {
+      try {
+        const parsed = JSON.parse(rankData.value)
+        setManualRanking(Array.isArray(parsed) && parsed.length > 0 ? parsed : null)
+      } catch {
+        setManualRanking(null)
+      }
+    } else {
+      setManualRanking(null)
+    }
+
     setLoading(false)
   }, [])
 
@@ -81,21 +107,31 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
   }, [fetchData])
 
   const missionComplete = Date.now() >= TARGET_DATE.getTime()
-  const top5 = leaders.slice(0, 5)
-  const currentUserRank = top5.findIndex(
+
+  const top6: RankEntry[] = manualRanking
+    ? manualRanking.slice(0, 6).map(name => ({ username: name }))
+    : allLeaders.slice(0, 6)
+
+  const currentUserRank = top6.findIndex(
     l => l.username.toLowerCase() === currentUsername.toLowerCase()
   ) + 1
   const myClaim = claims.find(c => c.username.toLowerCase() === currentUsername.toLowerCase())
   const currentTurn = claims.length + 1
   const isMyTurn = missionComplete && currentUserRank > 0 && currentUserRank === currentTurn && !myClaim
 
-  const handleClaim = async (rewardId: number) => {
+  const handleRewardClick = (reward: { id: number; name: string }) => {
     if (!isMyTurn || claiming) return
-    if (claims.find(c => c.reward_id === rewardId)) return
+    if (claims.find(c => c.reward_id === reward.id)) return
+    setPendingReward(reward)
+  }
+
+  const handleConfirm = async () => {
+    if (!pendingReward || !isMyTurn || claiming) return
     setClaiming(true)
+    setPendingReward(null)
     const { error } = await supabase.from('reward_claims').insert([{
       username: currentUsername,
-      reward_id: rewardId,
+      reward_id: pendingReward.id,
       rank: currentUserRank,
     }])
     if (!error) await fetchData()
@@ -103,6 +139,7 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
   }
 
   return (
+    <>
     <motion.div
       className="min-h-screen bg-aurora-bg font-terminal text-orange-100"
       initial={{ opacity: 0, x: 40 }}
@@ -146,27 +183,72 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
               </h1>
               <p className="text-xs text-orange-700 tracking-wider">
                 {missionComplete
-                  ? "Le top 5 choisit ses récompenses dans l'ordre du classement final."
+                  ? "Le top 6 choisit ses récompenses dans l'ordre du classement final ajusté."
                   : "Les choix seront débloqués à la fin du compte à rebours. Voici un aperçu des récompenses."}
               </p>
             </div>
 
-            {/* Top 5 */}
+            {/* Notice pré-compte-à-rebours */}
+            {!missionComplete && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="border border-orange-700/40 bg-orange-950/20 p-5 space-y-3"
+              >
+                <div className="flex items-center gap-2 border-b border-orange-700/30 pb-3">
+                  <AlertTriangle className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
+                  <p className="text-xs tracking-[0.25em] text-orange-600 uppercase">Avis — A.U.R.O.R.A CORP</p>
+                </div>
+                <p className="text-xs leading-relaxed tracking-wide text-orange-500">
+                  Suite à de nombreuses anomalies détectées sur le réseau et des suspicions de triche, l'A.U.R.O.R.A CORP s'est concertée en urgence. Les récompenses ont été modifiées en conséquence.
+                </p>
+                <p className="text-xs leading-relaxed tracking-wide text-orange-600">
+                  Un <span className="text-orange-300 font-bold">nouveau classement ajusté</span> sera révélé à la fin du compte à rebours, afin de refléter les résultats sans triche. Les récompenses ci-dessous sont celles qui seront mises en jeu.
+                </p>
+              </motion.div>
+            )}
+
+            {/* Anti-cheat notice — visible par tous une fois la mission terminée */}
+            {missionComplete && (
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="border border-orange-700/50 bg-orange-950/30 p-5 space-y-3"
+              >
+                <div className="flex items-center gap-2 border-b border-orange-700/30 pb-3">
+                  <AlertTriangle className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
+                  <p className="text-xs tracking-[0.25em] text-orange-600 uppercase">Décision de l'A.U.R.O.R.A CORP</p>
+                </div>
+                <p className="text-xs leading-relaxed tracking-wide text-orange-500">
+                  Suite à de nombreuses suspicions de triche et des anomalies critiques détectées sur le réseau, l'A.U.R.O.R.A CORP s'est concertée en urgence. Pour purger la base de données et rétablir l'équilibre, le classement a été réorganisé, afin de refléter un classement sans triche.
+                </p>
+                <p className="text-xs leading-relaxed tracking-wide text-orange-500">
+                  Face à la situation, l'A.U.R.O.R.A CORP a pris une décision radicale : nous récompensons finalement les <span className="text-orange-300 font-bold">6 premiers</span> de ce classement ajusté, et les récompenses ont été modifiées pour l'occasion.
+                </p>
+              </motion.div>
+            )}
+
+            {/* Top 6 */}
             <div className="border border-orange-500/30 bg-black/60 p-5 space-y-3">
               <div className="flex items-center gap-2 border-b border-orange-500/20 pb-3">
                 <Trophy className="h-3.5 w-3.5 text-orange-600" />
-                <p className="text-xs tracking-[0.3em] text-orange-600 uppercase">Classement Final — Top 5</p>
+                <p className="text-xs tracking-[0.3em] text-orange-600 uppercase">
+                  Classement Final — Top 6{manualRanking ? ' (Ajusté)' : ''}
+                </p>
               </div>
-              {top5.length === 0 ? (
-                <p className="text-xs text-orange-700 py-4 text-center">Aucun scout inscrit.</p>
+              {top6.length === 0 ? (
+                <p className="text-xs text-orange-700 py-4 text-center">Classement en attente.</p>
               ) : (
                 <div className="space-y-2">
-                  {top5.map((entry, i) => {
+                  {top6.map((entry, i) => {
                     const rank = i + 1
                     const claim = claims.find(c => c.username.toLowerCase() === entry.username.toLowerCase())
                     const isCurrentTurnPlayer = rank === currentTurn && !claim
                     const isMe = entry.username.toLowerCase() === currentUsername.toLowerCase()
                     const chosenReward = claim ? REWARDS.find(r => r.id === claim.reward_id) : null
+                    const leaderData = allLeaders.find(l => l.username.toLowerCase() === entry.username.toLowerCase())
                     return (
                       <div
                         key={entry.username}
@@ -192,7 +274,10 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
                             <p className="text-xs text-orange-800 tracking-wider mt-0.5">En attente</p>
                           )}
                         </div>
-                        <span className="text-xs text-orange-700 tracking-widest flex-shrink-0">{entry.total_points} pts</span>
+                        {/* Points uniquement si classement auto */}
+                        {!manualRanking && leaderData && (
+                          <span className="text-xs text-orange-700 tracking-widest flex-shrink-0">{leaderData.total_points} pts</span>
+                        )}
                       </div>
                     )
                   })}
@@ -220,7 +305,7 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
                   <div className="flex items-center justify-center gap-2">
                     <Lock className="h-3.5 w-3.5 text-orange-700" />
                     <p className="text-xs tracking-widest text-orange-700 uppercase">
-                      Tu es dans le top 5 — choix disponible à la fin du compte à rebours
+                      Tu es dans le top 6 — choix disponible à la fin du compte à rebours
                     </p>
                   </div>
                 ) : isMyTurn ? (
@@ -256,7 +341,7 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.07, duration: 0.25 }}
-                      onClick={() => canClaim && handleClaim(reward.id)}
+                      onClick={() => canClaim && handleRewardClick(reward)}
                       className={`border p-4 space-y-2 transition-all ${
                         isClaimedByMe
                           ? 'border-green-500/40 bg-green-900/10'
@@ -299,12 +384,61 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
 
             {currentUserRank === 0 && (
               <p className="text-center text-xs text-orange-800 tracking-widest py-4">
-                Tu n'es pas dans le top 5 — mais tu peux suivre les choix en temps réel.
+                Tu n'es pas dans le top 6 — mais tu peux suivre les choix en temps réel.
               </p>
             )}
           </>
         )}
       </main>
     </motion.div>
+
+    {/* Modal de confirmation — portal pour éviter le bug de position avec les transforms */}
+    {createPortal(
+      <AnimatePresence>
+        {pendingReward && (
+          <motion.div
+            className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-terminal"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="w-full max-w-sm border border-orange-500/60 bg-black/95 p-6 space-y-5"
+              initial={{ scale: 0.95, y: 8 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div>
+                <p className="text-xs tracking-[0.3em] text-orange-600 uppercase">Confirmer ton choix</p>
+                <p className="mt-2 text-sm font-bold tracking-wider uppercase text-orange-200 leading-snug">
+                  {pendingReward.name}
+                </p>
+              </div>
+              <p className="text-xs text-orange-700 tracking-wide leading-relaxed">
+                Ce choix est définitif et ne peut pas être annulé. Es-tu sûr de vouloir sélectionner cette récompense ?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPendingReward(null)}
+                  className="flex-1 border border-orange-500/30 py-2.5 text-xs tracking-[0.25em] text-orange-600 uppercase hover:border-orange-500/60 hover:text-orange-400 transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  className="flex-1 border border-orange-400/70 bg-orange-500/15 py-2.5 text-xs tracking-[0.25em] text-orange-200 uppercase font-bold hover:bg-orange-500/25 transition-all"
+                >
+                  Confirmer →
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
+    </>
   )
 }

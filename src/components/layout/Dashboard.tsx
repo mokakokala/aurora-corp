@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { usePresence } from '../../hooks/usePresence'
 import { useTabTitle } from '../../hooks/useTabTitle'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -7,6 +7,8 @@ import { TARGET_DATE } from '../../config/constants'
 import { useCountdown } from '../../hooks/useCountdown'
 import { CountdownModule } from '../modules/CountdownModule'
 import { CountdownEndSequence } from '../modules/CountdownEndSequence'
+import { RewardRevealModal } from '../modules/RewardRevealModal'
+import { RatingModal } from '../modules/RatingModal'
 import { RadarMapModule } from '../modules/RadarMapModule'
 import { DNAScannerModule } from '../modules/DNAScannerModule'
 import { AudioLogModule } from '../modules/AudioLogModule'
@@ -64,13 +66,60 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
 
   // Animation fin de compte à rebours — gérée ici pour survivre aux changements d'onglet
   const { expired } = useCountdown(TARGET_DATE)
-  const [animDone,    setAnimDone]    = useState(() => sessionStorage.getItem('aurora_endanim') === '1')
+  const [animDone,    setAnimDone]    = useState(() => localStorage.getItem('aurora_endanim') === '1')
   const [showEndAnim, setShowEndAnim] = useState(false)
   const [postReveal,  setPostReveal]  = useState(false)
+
+  // Classement manuel + popup récompenses top 6
+  const [manualRanking, setManualRanking] = useState<string[]>([])
+  const [showRewardReveal, setShowRewardReveal] = useState(false)
+  const [showRating, setShowRating] = useState(false)
+
+  useEffect(() => {
+    supabase.from('admin_config').select('value').eq('key', 'manual_ranking').maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          try {
+            const parsed = JSON.parse((data as { value: string }).value)
+            if (Array.isArray(parsed)) setManualRanking(parsed)
+          } catch { /* ignore */ }
+        }
+      })
+  }, [])
+
+  const userRankInTop6 = manualRanking.length > 0
+    ? manualRanking.slice(0, 6).findIndex(n => n.toLowerCase() === username.toLowerCase()) + 1
+    : 0
+
+  const canShowRewardReveal = () =>
+    expired
+    && userRankInTop6 > 0
+    && sessionStorage.getItem('aurora_reward_reveal') !== '1'
+
+  // Ref toujours à jour — évite le bug de closure dans onDone
+  const canShowRewardRevealRef = useRef(canShowRewardReveal())
+  useEffect(() => {
+    canShowRewardRevealRef.current = canShowRewardReveal()
+  })
 
   useEffect(() => {
     if (expired && !animDone && !showEndAnim) setShowEndAnim(true)
   }, [expired, animDone, showEndAnim])
+
+  // Afficher le popup au chargement si déjà expiré, animDone, et pas encore vu
+  useEffect(() => {
+    if (animDone && !showEndAnim && canShowRewardReveal()) {
+      setShowRewardReveal(true)
+    }
+  }, [animDone, showEndAnim, userRankInTop6, expired])
+
+  // Popup notation — 5s après que tout est terminé (anim + reward reveal)
+  useEffect(() => {
+    if (!animDone || !expired || showEndAnim || showRewardReveal) return
+    if (localStorage.getItem('aurora_rating_done') === '1') return
+    const t = setTimeout(() => setShowRating(true), 5000)
+    return () => clearTimeout(t)
+  }, [animDone, expired, showEndAnim, showRewardReveal])
 
   // Easter egg 13 — overlay jour J
   const [showDayJ, setShowDayJ] = useState(() =>
@@ -105,7 +154,7 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
       <CountdownEndSequence
         baseUrl={import.meta.env.BASE_URL}
         onReveal={() => {
-          sessionStorage.setItem('aurora_endanim', '1')
+          localStorage.setItem('aurora_endanim', '1')
           setAnimDone(true)
           document.documentElement.classList.add('override-active')
           setPostReveal(true)
@@ -113,7 +162,19 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
         onDone={() => {
           setShowEndAnim(false)
           setPostReveal(false)
+          if (canShowRewardRevealRef.current) setShowRewardReveal(true)
         }}
+      />
+    )}
+    {showRating && username && (
+      <RatingModal username={username} onClose={() => setShowRating(false)} />
+    )}
+    {showRewardReveal && userRankInTop6 > 0 && username && (
+      <RewardRevealModal
+        username={username}
+        rank={userRankInTop6}
+        onClose={() => setShowRewardReveal(false)}
+        onGoToRewards={() => { setShowRewardReveal(false); onShowRewards() }}
       />
     )}
     {adminOpen && <AdminTerminal onClose={() => setAdminOpen(false)} />}

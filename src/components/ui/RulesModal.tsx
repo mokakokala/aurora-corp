@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createPortal } from 'react-dom'
 import { X, ChevronRight, AlertTriangle } from 'lucide-react'
 import { TermsModal } from './TermsModal'
+import { TARGET_DATE } from '../../config/constants'
 
 const REWARDS = [
-  { name: "Autorisation d'amener une chaise de camping au camp", desc: "Tu as le permis exceptionnel d'emmener une chaise de camping en Croatie (normalement interdit à l'étranger)." },
-  { name: "Ticket coupe-file unique", desc: "Valable une seule fois, il te permet de passer instantanément premier dans n'importe quelle file." },
-  { name: "Intendant privé d'un soir", desc: "Tu peux engager un intendant pour qu'il cuisine un soir dans ta patrouille. (Pas valable pour CC)." },
-  { name: "Petit-déjeuner de luxe", desc: "Tu te fais livrer ton petit dej. à ton pilo dès ton réveil." },
-  { name: "Apéro de luxe", desc: "Tu reçois boisson et snack directement sur la plaine pour te faire un petit apéro trkl." },
+  { name: "Intendant privé d'un soir", desc: "Un intendant cuisine pour ta patrouille un soir, valable hors CC." },
+  { name: "Petit-déjeuner de luxe", desc: "Livré directement à ton pilo au réveil." },
+  { name: "Petit-déjeuner de luxe", desc: "Livré directement à ton pilo au réveil." },
+  { name: "Apéro de luxe", desc: "Boisson et snacks servis sur la plaine." },
+  { name: "Apéro de luxe", desc: "Boisson et snacks servis sur la plaine." },
+  { name: "Ticket Coupe-file", desc: "Priorité absolue, valable une seule fois." },
 ]
 
 const FAILLES = [
@@ -51,20 +53,42 @@ function Step0() {
 }
 
 function Step1() {
+  const missionComplete = Date.now() >= TARGET_DATE.getTime()
   return (
     <div className="space-y-4">
       <FrameHeader tag="Classement général" title="Les Récompenses du Camp" />
+
+      {/* Notice anti-triche */}
+      <div className="border border-orange-700/50 bg-orange-950/30 px-4 py-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5 text-orange-600 flex-shrink-0" />
+          <p className="text-xs tracking-[0.2em] text-orange-600 uppercase font-bold">Avis — A.U.R.O.R.A CORP</p>
+        </div>
+        <p className="text-xs text-orange-500 tracking-wide leading-relaxed">
+          Suite à des suspicions de triche et des anomalies détectées sur le réseau, l'A.U.R.O.R.A CORP s'est concertée en urgence. <span className="text-orange-300">Les récompenses ont été modifiées.</span>
+        </p>
+        {missionComplete ? (
+          <p className="text-xs text-orange-600 tracking-wide leading-relaxed">
+            Le classement a été réorganisé pour refléter les résultats sans triche. Rendez-vous dans <span className="text-orange-300 font-bold">[&nbsp;RÉCOMPENSES&nbsp;]</span> pour voir le classement final ajusté.
+          </p>
+        ) : (
+          <p className="text-xs text-orange-600 tracking-wide leading-relaxed">
+            Un <span className="text-orange-300 font-bold">nouveau classement ajusté</span> sera révélé à la fin du compte à rebours.
+          </p>
+        )}
+      </div>
+
       <p className="text-xs text-orange-400 tracking-wide leading-relaxed">
         Accumule un maximum de points dès maintenant.
       </p>
       <div className="border border-orange-500/20 bg-orange-900/5 px-4 py-3 space-y-1.5">
         <p className="text-xs text-orange-500 tracking-wider">
-          Ces privilèges sont réservés <span className="font-bold text-orange-300">UNIQUEMENT aux 5 premiers</span> du classement général. Chaque récompense est unique et utilisable une seule fois pour tout le camp.
+          Ces privilèges sont réservés <span className="font-bold text-orange-300">UNIQUEMENT aux 6 premiers</span> du classement ajusté. Chaque récompense est unique et utilisable une seule fois pour tout le camp.
         </p>
         <ul className="text-xs text-orange-600 tracking-wide space-y-1 pl-2 mt-2">
-          <li>→ Le 1er choisit sa récompense en premier parmi les 5.</li>
-          <li>→ Le 2e choisit parmi les 4 restantes, et ainsi de suite…</li>
-          <li>→ Le 5e n'aura pas le choix et héritera automatiquement du dernier lot disponible !</li>
+          <li>→ Le 1er choisit sa récompense en premier parmi les 6.</li>
+          <li>→ Le 2e choisit parmi les 5 restantes, et ainsi de suite…</li>
+          <li>→ Le 6e n'aura pas le choix et héritera automatiquement du dernier lot disponible !</li>
         </ul>
       </div>
       <div className="space-y-2">
