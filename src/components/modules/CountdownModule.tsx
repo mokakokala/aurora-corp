@@ -58,7 +58,7 @@ export function CountdownModule({
 
   const isUnlocked = (expired && animDone) || manualUnlock
 
-  if (manualUnlock || animDone) document.documentElement.classList.add('override-active')
+  if (manualUnlock || (animDone && expired)) document.documentElement.classList.add('override-active')
 
   const handleBlockedClick = () => {
     if (isUnlocked) return
