@@ -123,17 +123,17 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
 
   // Easter egg 13 — overlay jour J
   const [showDayJ, setShowDayJ] = useState(() =>
-    TARGET_DATE.getTime() <= Date.now() && !sessionStorage.getItem('aurora_dayj')
+    TARGET_DATE.getTime() <= Date.now() && !localStorage.getItem('aurora_dayj')
   )
   useEffect(() => {
-    if (!expired || sessionStorage.getItem('aurora_dayj')) return
+    if (!expired || localStorage.getItem('aurora_dayj')) return
     const t = setTimeout(() => setShowDayJ(true), 0)
     return () => clearTimeout(t)
   }, [expired])
   useEffect(() => {
     if (!showDayJ) return
     const t = setTimeout(() => {
-      sessionStorage.setItem('aurora_dayj', '1')
+      localStorage.setItem('aurora_dayj', '1')
       setShowDayJ(false)
     }, 7000)
     return () => clearTimeout(t)
@@ -190,7 +190,7 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6 }}
-          onClick={() => { sessionStorage.setItem('aurora_dayj', '1'); setShowDayJ(false) }}
+          onClick={() => { localStorage.setItem('aurora_dayj', '1'); setShowDayJ(false) }}
         >
           <div className="pointer-events-none absolute inset-0 scanlines opacity-20" />
           <div className="text-center space-y-6 max-w-lg">
