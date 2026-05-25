@@ -230,8 +230,8 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
               </motion.div>
             )}
 
-            {/* Top 6 */}
-            <div className="border border-orange-500/30 bg-black/60 p-5 space-y-3">
+            {/* Top 6 — uniquement après la fin du compte à rebours */}
+            {missionComplete && <div className="border border-orange-500/30 bg-black/60 p-5 space-y-3">
               <div className="flex items-center gap-2 border-b border-orange-500/20 pb-3">
                 <Trophy className="h-3.5 w-3.5 text-orange-600" />
                 <p className="text-xs tracking-[0.3em] text-orange-600 uppercase">
@@ -283,7 +283,7 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
                   })}
                 </div>
               )}
-            </div>
+            </div>}
 
             {/* Status banner for current user */}
             {currentUserRank > 0 && (
