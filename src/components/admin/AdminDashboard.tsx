@@ -394,12 +394,14 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
       .select('key')
       .eq('key', 'manual_ranking')
       .maybeSingle()
+    let error
     if (existing) {
-      await supabase.from('admin_config').update({ value }).eq('key', 'manual_ranking')
+      ;({ error } = await supabase.from('admin_config').update({ value }).eq('key', 'manual_ranking'))
     } else {
-      await supabase.from('admin_config').insert({ key: 'manual_ranking', value })
+      ;({ error } = await supabase.from('admin_config').insert({ key: 'manual_ranking', value }))
     }
     setManualRankingSaving(false)
+    if (error) { console.error('saveManualRanking error:', error); return }
     setManualRankingSaved(true)
     setTimeout(() => setManualRankingSaved(false), 3000)
   }

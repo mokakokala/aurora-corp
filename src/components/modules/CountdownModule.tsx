@@ -37,7 +37,7 @@ interface Props {
 }
 
 export function CountdownModule({
-  animDone  = sessionStorage.getItem('aurora_endanim') === '1',
+  animDone  = localStorage.getItem('aurora_endanim') === '1',
   postReveal = false,
 }: Props) {
   const adminCode = useAdminCode()

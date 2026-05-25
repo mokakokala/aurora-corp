@@ -285,8 +285,8 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
               )}
             </div>}
 
-            {/* Status banner for current user */}
-            {currentUserRank > 0 && (
+            {/* Status banner for current user — uniquement après la fin du compte à rebours */}
+            {missionComplete && currentUserRank > 0 && (
               <div className={`border p-4 text-center ${
                 myClaim
                   ? 'border-green-500/30 bg-green-900/10'
