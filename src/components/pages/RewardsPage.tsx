@@ -382,7 +382,7 @@ export function RewardsPage({ onBack, currentUsername }: { onBack: () => void; c
               </div>
             </div>
 
-            {currentUserRank === 0 && (
+            {missionComplete && currentUserRank === 0 && (
               <p className="text-center text-xs text-orange-800 tracking-widest py-4">
                 Tu n'es pas dans le top 6 — mais tu peux suivre les choix en temps réel.
               </p>
