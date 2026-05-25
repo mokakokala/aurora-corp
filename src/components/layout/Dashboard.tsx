@@ -94,7 +94,7 @@ export function Dashboard({ onDiscoverMembers, onShowLeaderboard, onShowRewards 
   const canShowRewardReveal = () =>
     expired
     && userRankInTop6 > 0
-    && sessionStorage.getItem('aurora_reward_reveal') !== '1'
+    && localStorage.getItem('aurora_reward_reveal') !== '1'
 
   // Ref toujours à jour — évite le bug de closure dans onDone
   const canShowRewardRevealRef = useRef(canShowRewardReveal())

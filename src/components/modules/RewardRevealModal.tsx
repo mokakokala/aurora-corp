@@ -28,12 +28,12 @@ export function RewardRevealModal({ username, rank, onGoToRewards, onClose }: Pr
   const [agreed, setAgreed] = useState(false)
 
   const handleClose = () => {
-    sessionStorage.setItem('aurora_reward_reveal', '1')
+    localStorage.setItem('aurora_reward_reveal', '1')
     onClose()
   }
 
   const handleGoToRewards = () => {
-    sessionStorage.setItem('aurora_reward_reveal', '1')
+    localStorage.setItem('aurora_reward_reveal', '1')
     onGoToRewards()
   }
 
